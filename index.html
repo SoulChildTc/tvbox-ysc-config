@@ -137,6 +137,13 @@
   .scanwrap video{width:200px;border-radius:9px;background:#000;display:block;margin:0 auto 12px}
   .scanwrap video[hidden]{display:none}
 
+  .http-link{
+    display:inline-block;margin-top:14px;font-size:12.5px;font-weight:600;
+    color:var(--accent);text-decoration:none;border-bottom:1px solid currentColor;
+    padding-bottom:1px;
+  }
+  .http-link:hover{opacity:.75}
+
   .brands{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .brands button{
     display:flex;flex-direction:column;align-items:flex-start;gap:3px;
@@ -321,9 +328,10 @@
 
         <!-- 环境不支持：说明 -->
         <div class="view" id="scan-blocked" hidden>
-          <p class="lead">这个页面扫不了局域网</p>
-          <p class="sub">当前页面是 https，浏览器不允许它请求 http 的局域网设备。<br>
-          用 http 打开本页就能自动扫描，或者直接切到「扫码」「手填 IP」。</p>
+          <p class="lead">这个链接没法自动找电视</p>
+          <p class="sub">用下面这个链接打开，就能自动搜索了。</p>
+          <a class="http-link" id="http-link" href="#">换个链接打开</a>
+          <p class="sub" id="http-note"></p>
         </div>
 
         <!-- 视图一：选网段 -->
@@ -358,8 +366,9 @@
           <p class="sub">电视打开「设置 → 配置接口」，把屏幕上的二维码对准摄像头</p>
         </div>
         <div class="view" id="qr-blocked" hidden>
-          <p class="lead">当前页面打不开摄像头</p>
-          <p class="sub">摄像头只能在 https 或 localhost 下使用。可以换成「手填 IP」，在电视的「设置」里能看到本机地址。</p>
+          <p class="lead" id="qr-blocked-title">这里打不开摄像头</p>
+          <p class="sub" id="qr-blocked-sub">换个链接打开就能扫码，或者用「手填 IP」。</p>
+          <a class="http-link" id="https-link" href="#" hidden>换个链接打开</a>
         </div>
       </div>
 
@@ -668,7 +677,7 @@
 
     discover(token, prefixes).then(function (hits) {
       if (token !== scanToken || !hits) return;
-      if (hits.blocked) return scanFailed('浏览器拦住了本地网络请求');
+      if (hits.blocked) return scanFailed('浏览器不让访问本地设备');
       if (!hits.length) return scanFailed('这个网段没找到电视');
       if (hits.length === 1) return selectTv(hits[0].ip, hits[0].port);
       setState('warn', '找到 ' + hits.length + ' 台设备', '点一个开始推送');
@@ -817,6 +826,7 @@
 
   function applyEnv() {
     markTab('tab-scan', noMixed, 'https 页面无法访问局域网，需要 http 打开本页');
+    setupHttpLink();
     markTab('tab-qr', canCamera, '摄像头需要 https 或 localhost');
 
     var sub = document.getElementById('modal-sub');
@@ -829,6 +839,20 @@
   }
 
   /* ---------- Tab 切换 ---------- */
+
+  /* https 下给一条切到 http 的入口；页面在 http 打开时把地址存起来供反向使用 */
+  function setupHttpLink() {
+    var link = document.getElementById('http-link');
+    var note = document.getElementById('http-note');
+    if (!link) return;
+    if (location.protocol === 'https:') {
+      link.href = 'http:' + location.href.slice(6);
+      link.hidden = false;
+    } else {
+      link.hidden = true;
+      if (note) note.textContent = '';
+    }
+  }
 
   function showTab(name) {
     Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
@@ -903,6 +927,16 @@
     if (!canCamera) {
       wrap.hidden = true;
       blocked.hidden = false;
+      var link = document.getElementById('https-link');
+      // http 页面（非 localhost）拿不到摄像头，给一条切 https 的入口
+      if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+        link.href = 'https:' + location.href.slice(5);
+        link.hidden = false;
+        document.getElementById('qr-blocked-sub').textContent =
+          '换个链接打开就能扫码，或者用「手填 IP」。';
+      } else {
+        link.hidden = true;
+      }
       return;
     }
     wrap.hidden = false;
@@ -920,10 +954,10 @@
         video.hidden = true;
         wrap.hidden = true;
         blocked.hidden = false;
-        document.getElementById('qr-blocked').querySelector('.lead').textContent =
-          '没拿到摄像头权限';
-        document.getElementById('qr-blocked').querySelector('.sub').textContent =
-          '在浏览器地址栏的权限设置里允许摄像头后重试，或者用「手填 IP」。';
+        document.getElementById('https-link').hidden = true;
+        document.getElementById('qr-blocked-title').textContent = '没拿到摄像头权限';
+        document.getElementById('qr-blocked-sub').textContent =
+          '允许之后就能扫，或者直接用「手填 IP」。';
       });
   }
 
