@@ -1350,7 +1350,7 @@
 
     if (!job) return;
 
-    // 从 https 跳过来：停在「已识别」这一步，等用户点推送
+    // 从 https 跳过来：用户已经点过推送了，直接接着推
     setTimeout(function () {
       pendingKind = src;
       pending = { url: job.url, name: job.name };
@@ -1364,13 +1364,19 @@
       showFoot(true);
       applyEnv();
       showBrandStep();
-      showTab('qr');
       selectTv(ip, port);
-      document.getElementById('qr-start').hidden = true;
-      document.getElementById('scanwrap').hidden = true;
-      document.getElementById('qr-blocked').hidden = true;
-      document.getElementById('qr-found').hidden = false;
-      document.getElementById('qr-addr').textContent = ip + ':' + port;
+
+      // 从 https 跳过来就是用户已经点过推送了，这里接着推，不再要求点第二次
+      resultEl.hidden = false;
+      flowEl.hidden = true;
+      hideFoot();
+      var art = document.getElementById('resart');
+      art.className = 'resart';
+      art.innerHTML = '<span class="spin"></span>';
+      document.getElementById('res-title').textContent = '正在推送…';
+      document.getElementById('res-desc').textContent = '推送到 ' + ip + ':' + port;
+      document.getElementById('res-close').hidden = true;
+      doPush();
     }, 0);
   })();
 
