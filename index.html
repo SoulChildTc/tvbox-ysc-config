@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TVBox 订阅地址</title>
+<meta name="theme-color" content="#F3F1EA">
+<link rel="icon" href="assets/avatar.jpg">
+<style>
+  :root{
+    --paper:#F3F1EA; --card:#FFFDF8; --ink:#171610; --ink-soft:#2B2921;
+    --line:#DDD9CC; --line-soft:#E8E4D8;
+    --body:#4A4740; --mute:#8C877A;
+    --accent:#C4432A;
+    --live:#2C7A52; --cache:#A9761C; --dead:#C0472F;
+    --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",Georgia,"Times New Roman",serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;
+    background:
+      radial-gradient(900px 420px at 12% -10%, #FFFEF9 0%, rgba(255,254,249,0) 62%),
+      var(--paper);
+    color:var(--ink);
+    font:15px/1.6 var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 28px 56px}
+
+  /* 顶栏 */
+  .top{display:flex;align-items:center;gap:11px;padding-bottom:26px}
+  .avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;filter:saturate(.92)}
+  .who{font-size:13.5px;font-weight:600;letter-spacing:-.005em}
+  .who span{font-weight:400;color:var(--mute);margin-left:8px;font-size:12.5px}
+  .stamp{margin-left:auto;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+
+  /* 标题区 */
+  .head{
+    display:grid;grid-template-columns:1fr 1.05fr;gap:44px;align-items:center;
+    padding:14px 0 40px;border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;margin:0 0 20px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:currentColor;opacity:.5}
+  h1{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(30px,3.6vw,46px);line-height:1.12;letter-spacing:-.01em;
+    margin:0 0 20px;text-wrap:balance;
+  }
+  h1 em{font-style:normal;color:var(--accent)}
+  .lede{color:var(--body);font-size:14.5px;margin:0;max-width:42ch}
+
+  /* 地址 */
+  .addr{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;
+  }
+  .addr-row{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;gap:8px 24px;padding:20px 22px;
+    border-bottom:1px solid var(--line-soft);
+    transition:background .15s ease;
+  }
+  .addr-row:last-child{border-bottom:0}
+  .addr-row:hover{background:#FCFAF3}
+  .tag{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--mute)}
+  .badge{
+    background:#F6E5E1;color:var(--accent);
+    padding:2px 8px;border-radius:5px;font-weight:600;font-size:10.5px;letter-spacing:.04em;
+  }
+  .url{
+    grid-column:1;font:12px/1.7 var(--mono);color:var(--ink-soft);
+    margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .url .dim{color:var(--mute)}
+  .addr-row .btns{grid-column:2;grid-row:1 / span 2;display:flex;gap:8px}
+
+  /* 推送模态框 */
+  .modal{
+    position:fixed;inset:0;z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    background:rgba(23,22,16,.42);backdrop-filter:blur(2px);
+  }
+  .modal[hidden]{display:none}
+  .modal-box{
+    width:min(400px,100%);background:var(--card);
+    border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 24px 60px -24px rgba(23,22,16,.5);
+    overflow:hidden;min-width:0;
+  }
+  .modal-head{padding:20px 22px 0;min-width:0}
+  .modal-head h3{font-size:15px;font-weight:650;margin:0 0 4px;letter-spacing:-.01em}
+  .modal-head p{margin:0;font-size:12.5px;color:var(--mute)}
+  .modal-body{padding:18px 22px 20px;min-width:0}
+
+  .state{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-soft);min-height:22px;min-width:0}
+  .state>span{min-width:0}
+  .state .sel{margin-left:auto;font:12px var(--mono);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .spin{
+    width:13px;height:13px;border-radius:50%;flex:none;
+    border:2px solid var(--line);border-top-color:var(--accent);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .dot2{width:7px;height:7px;border-radius:50%;background:var(--mute);flex:none}
+  .dot2.ok{background:var(--live)}
+  .dot2.warn{background:var(--cache)}
+  .sub{font-size:12px;color:var(--mute);margin:6px 0 0;line-height:1.5}
+
+  button.link{
+    display:block;border:0;background:none;padding:0;margin:14px 0 0;
+    font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;
+    border-bottom:1px solid currentColor;border-radius:0;width:fit-content;
+  }
+  button.link:hover{background:none;border-color:currentColor;opacity:.75}
+  button.link[hidden]{display:none}
+  .tabs{display:flex;gap:2px;padding:0 22px;margin-top:14px;border-bottom:1px solid var(--line-soft)}
+  .tabs button{
+    border:0;border-radius:0;background:none;padding:10px 13px 9px;
+    font-size:12.5px;font-weight:500;color:var(--mute);cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .tabs button:hover{background:none;color:var(--body)}
+  .tabs button.on{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+  .tabs button.off{color:var(--mute);opacity:.55;text-decoration:line-through}
+  .panel[hidden]{display:none}
+  .view[hidden]{display:none}
+
+  .lead{font-size:13px;color:var(--ink-soft);margin:0 0 14px}
+
+  .scanwrap{text-align:center}
+  .scanwrap video{width:200px;border-radius:9px;background:#000;display:block;margin:0 auto 12px}
+  .scanwrap video[hidden]{display:none}
+
+  .brands{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .brands button{
+    display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+    padding:11px 14px;text-align:left;border-radius:9px;
+    font-weight:600;font-size:13px;
+  }
+  .brands button span{font:11px var(--mono);color:var(--mute);font-weight:400}
+  .brands button:hover span{color:var(--body)}
+
+  .custom{
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    margin-top:16px;padding-top:15px;border-top:1px dashed var(--line);
+    font-size:12px;color:var(--mute);
+  }
+  .custom input{
+    font:12px var(--mono);color:var(--ink);background:var(--paper);
+    border:1px solid var(--line);border-radius:7px;padding:6px 9px;
+    width:128px;flex:1;min-width:110px;
+  }
+  .custom input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .custom button{padding:6px 13px;font-size:11.5px;border-radius:7px;flex:none}
+
+  .picks{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .picks button{font:12px var(--mono);padding:5px 11px;border-radius:7px}
+
+
+  .manual{display:flex;align-items:center;gap:7px;margin-top:12px}
+  .manual[hidden]{display:none}
+  .manual input{
+    font:12px var(--mono);color:var(--ink);background:var(--paper);
+    border:1px solid var(--line);border-radius:7px;padding:6px 9px;width:124px;
+  }
+  .manual input.port{width:56px}
+  .manual input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+
+  .modal-foot{
+    display:flex;gap:8px;padding:0 22px 20px;
+  }
+  .modal-foot button{flex:1}
+  .push-go{background:var(--accent);border-color:var(--accent);color:#FFF6F1}
+  .push-go:hover{background:#AC3921;border-color:#AC3921}
+  .push-go:disabled{opacity:.45}
+
+  button{
+    appearance:none;font-family:inherit;font-size:12.5px;font-weight:600;letter-spacing:.01em;
+    border:1px solid var(--line);background:transparent;color:var(--ink);
+    border-radius:9px;padding:9px 18px;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease,color .15s ease,transform .12s ease;
+  }
+  button:hover{background:#F1EEE4;border-color:#CFCAB9}
+  button:active{transform:translateY(1px)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#FFF6F1}
+  button.primary:hover{background:#AC3921;border-color:#AC3921}
+  button[data-done="1"]{
+    background:var(--live)!important;border-color:var(--live)!important;
+    color:#FFF!important;transform:none;
+  }
+
+  .sources{padding-top:38px}
+  .sources-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+  .sources-head h2{
+    font-size:12px;font-weight:600;margin:0;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .sources-head .count{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}
+  .row{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 8px 11px 0;border-bottom:1px solid var(--line-soft);
+    min-width:0;transition:background .15s ease;
+  }
+  .row:hover{background:rgba(255,253,248,.7)}
+  .dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--dead)}
+  .row[data-s="ok"] .dot{background:var(--live)}
+  .row[data-s="cache"] .dot{background:var(--cache)}
+  .row .n{
+    font-size:13.5px;font-weight:600;flex:none;max-width:86px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .row[data-s="dead"] .n{color:var(--dead);font-weight:500}
+  .row .u{
+    flex:1;min-width:0;font:11.5px/1.4 var(--mono);color:var(--mute);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .row .u.bad{color:var(--dead);opacity:.85}
+  .row[data-s="cache"] .u{color:var(--cache)}
+  .row button{
+    padding:4px 11px;font-size:11px;font-weight:500;border-radius:7px;flex:none;
+    color:var(--ink-soft);border-color:var(--line);
+  }
+
+  footer{
+    margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--mute);
+    display:flex;gap:20px;flex-wrap:wrap;
+  }
+  .err{color:var(--accent)}
+
+  @media (max-width:860px){
+    .wrap{padding:22px 20px 44px}
+    .head{grid-template-columns:1fr;gap:28px;padding:6px 0 30px}
+    .addr-row{padding:18px;gap:6px 16px}
+    .addr-row .btns{grid-row:auto;grid-column:1;justify-self:start;margin-top:12px}
+    .grid{grid-template-columns:1fr;gap:0}
+    .row .n{max-width:none;width:92px}
+    .stamp{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <img class="avatar" src="assets/avatar.jpg" alt="" width="30" height="30">
+    <div class="who">SoulChildTc<span>tvbox-ysc-config</span></div>
+    <div class="stamp" id="stamp">—</div>
+  </header>
+
+  <main>
+    <section class="head">
+      <div>
+        <p class="eyebrow">配置源每 12 小时检测一次</p>
+        <h1><em>TVBox</em> 订阅地址</h1>
+        <p class="lede">好几个公开配置源都合在这里，哪个不能用了就换掉。你只管把地址填进去。</p>
+      </div>
+      <div class="addr">
+        <div class="addr-row">
+          <div class="tag"><span class="badge">推荐</span>多仓订阅 · 可以自己选源</div>
+          <p class="url" id="url-multi"></p>
+          <div class="btns">
+            <button class="primary" data-push="multi" data-name="多仓订阅">推到电视</button>
+            <button id="copy-multi">复制地址</button>
+          </div>
+        </div>
+        <div class="addr-row">
+          <div class="tag">单仓聚合 · 所有站点合并成一份</div>
+          <p class="url" id="url-single"></p>
+          <div class="btns">
+            <button data-push="single" data-name="单仓聚合">推到电视</button>
+            <button id="copy-single">复制地址</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sources">
+      <div class="sources-head">
+        <h2>配置源</h2>
+        <span class="count" id="summary">加载中</span>
+      </div>
+      <div class="grid" id="list"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>填到「设置 → 配置地址」里</span>
+    <span>内容来自公开分享，这里只是汇总</span>
+  </footer>
+
+</div>
+
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h3 id="modal-title">推送到电视</h3>
+      <p id="modal-sub">正在查找同一网络里的电视</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="scan" id="tab-scan" class="on">扫描</button>
+      <button role="tab" data-tab="qr" id="tab-qr">扫码</button>
+      <button role="tab" data-tab="manual">手填 IP</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- 扫描 -->
+      <div class="panel" data-panel="scan">
+
+        <!-- 环境不支持：说明 -->
+        <div class="view" id="scan-blocked" hidden>
+          <p class="lead">这个页面扫不了局域网</p>
+          <p class="sub">当前页面是 https，浏览器不允许它请求 http 的局域网设备。<br>
+          用 http 打开本页就能自动扫描，或者直接切到「扫码」「手填 IP」。</p>
+        </div>
+
+        <!-- 视图一：选网段 -->
+        <div class="view" id="view-pick">
+          <p class="lead">你家路由器是哪个牌子？</p>
+          <div class="brands" id="brands"></div>
+          <div class="custom">
+            <span>都不是？</span>
+            <input id="custom-net" placeholder="192.168.100." autocomplete="off" spellcheck="false">
+            <button id="custom-go">扫这个</button>
+          </div>
+        </div>
+
+        <!-- 视图二：扫描状态 -->
+        <div class="view" id="view-scan" hidden>
+          <div class="state" id="state">
+            <span class="dot2"></span>
+            <span id="state-text"></span>
+            <span class="sel" id="state-sel"></span>
+          </div>
+          <p class="sub" id="state-sub"></p>
+          <div class="picks" id="picks"></div>
+          <button class="link" id="rescan">换一个网段</button>
+        </div>
+
+      </div>
+
+      <!-- 扫码 -->
+      <div class="panel" data-panel="qr" hidden>
+        <div class="scanwrap" id="scanwrap">
+          <video id="scan-video" playsinline muted></video>
+          <p class="sub">电视打开「设置 → 配置接口」，把屏幕上的二维码对准摄像头</p>
+        </div>
+        <div class="view" id="qr-blocked" hidden>
+          <p class="lead">当前页面打不开摄像头</p>
+          <p class="sub">摄像头只能在 https 或 localhost 下使用。可以换成「手填 IP」，在电视的「设置」里能看到本机地址。</p>
+        </div>
+      </div>
+
+      <!-- 手填 -->
+      <div class="panel" data-panel="manual" hidden>
+        <p class="sub">在电视的「设置」里能看到本机 IP，端口一般是 9978</p>
+        <div class="manual">
+          <input id="tv-ip" inputmode="decimal" placeholder="192.168.1.23" autocomplete="off" spellcheck="false">
+          <label for="tv-port">:</label>
+          <input id="tv-port" class="port" inputmode="numeric" value="9978" autocomplete="off">
+        </div>
+        <p class="sub" id="manual-hint"></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="modal-cancel">取消</button>
+      <button id="modal-go" class="push-go" disabled>推送到电视</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var base = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var fileUrl = function (f) { return base + 'output/' + encodeURIComponent(f); };
+  var multiUrl = fileUrl('多仓订阅.json');
+  var singleUrl = fileUrl('单仓聚合.json');
+
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function showAddr(el, url) {
+    var i = url.lastIndexOf('/');
+    el.title = decodeURIComponent(url);
+    el.innerHTML = '<span class="dim">' + esc(url.slice(0, i + 1)) + '</span>' +
+                   esc(decodeURIComponent(url.slice(i + 1)));
+  }
+  showAddr(document.getElementById('url-multi'), multiUrl);
+  showAddr(document.getElementById('url-single'), singleUrl);
+
+  function copy(btn, text) {
+    var label = btn.textContent;
+    function done() {
+      btn.textContent = '已复制';
+      btn.dataset.done = '1';
+      setTimeout(function () { btn.textContent = label; delete btn.dataset.done; }, 1500);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else fallback();
+  }
+
+  document.getElementById('copy-multi').onclick = function () { copy(this, multiUrl); };
+  document.getElementById('copy-single').onclick = function () { copy(this, singleUrl); };
+
+  /* ---------- 推送到电视 ---------- */
+
+  var modal = document.getElementById('modal');
+  var modalSub = document.getElementById('modal-sub');
+  var stateWrap = document.getElementById('state');
+  var stateText = document.getElementById('state-text');
+  var stateSel = document.getElementById('state-sel');
+  var stateSub = document.getElementById('state-sub');
+  var picksEl = document.getElementById('picks');
+  var manualPanelEl = document.querySelector('[data-panel="manual"]');
+  var manualHint = document.getElementById('manual-hint');
+  var goBtn = document.getElementById('modal-go');
+  var video = document.getElementById('scan-video');
+  var ipEl = document.getElementById('tv-ip');
+  var portEl = document.getElementById('tv-port');
+
+  var tv = null;              // { ip, port }
+  var pending = null;         // { url, name }
+  /* 推送名统一带前缀，避免和其他源混淆 */
+  var NAME_PREFIX = 'SoulChild · ';
+  function displayName(name) { return NAME_PREFIX + name; }
+  var stream = null;
+  var scanToken = 0;          // 每次打开/取消自增，废弃过期结果
+
+  // 家用路由器出厂默认网段，按 2025 年国内线上销量份额排序（洛图科技数据）：
+  // 小米 30%、华为 25%、普联 20%、中兴 15%、腾达 5%。
+  // 浏览器拿不到本机内网 IP（WebRTC 已 mDNS 混淆），只能盲扫。
+  var SUBNETS = [
+    { p: '192.168.31.', brand: '小米' },
+    { p: '192.168.3.',  brand: '华为' },
+    { p: '192.168.1.',  brand: '普联 / TP-LINK' },
+    { p: '192.168.5.',  brand: '中兴' },
+    { p: '192.168.0.',  brand: '腾达' }
+  ];
+  var PORT = '9978';
+
+  function setState(cls, html, sub) {
+    stateWrap.innerHTML = (cls === 'load'
+      ? '<span class="spin"></span>'
+      : '<span class="dot2 ' + (cls || '') + '"></span>') +
+      '<span id="state-text">' + html + '</span>' +
+      '<span class="sel" id="state-sel"></span>';
+    stateText = document.getElementById('state-text');
+    stateSel = document.getElementById('state-sel');
+    if (sub !== undefined) stateSub.textContent = sub || '';
+  }
+
+  function setSel(t) { if (stateSel) stateSel.textContent = t || ''; }
+
+  function selectTv(ip, port) {
+    tv = { ip: ip, port: String(port || PORT) };
+    ipEl.value = ip;
+    portEl.value = tv.port;
+    setState('ok', '已找到电视', '');
+    setSel(ip + ':' + tv.port);
+    stopCamera();
+    goBtn.disabled = false;
+  }
+
+  /* 扫描失败就不再自动兜底，只提示用户切 Tab */
+  function scanFailed(msg) {
+    tv = null;
+    goBtn.disabled = true;
+    setState('warn', msg, '可以切到「扫码」或「手填 IP」');
+  }
+
+  /* 探测单机：no-cors 下能 resolve 说明端口有服务。
+     路径用 / —— 任何 HTTP 服务都会响应根路径，比 /device 通用。
+     blocked 标记浏览器拦截（PNA），用于区分「网络不通」和「被权限拦了」。 */
+  var pnaBlocked = 0;      // 连续被拦截的次数
+  var pnaOk = false;       // 是否有过一次成功，成功过就不再当成拦截
+
+  function probe(ip, port, timeout) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var ctl = window.AbortController ? new AbortController() : null;
+      var t0 = Date.now();
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        if (ctl) ctl.abort();
+        resolve(null);
+      }, timeout || 700);
+      fetch('http://' + ip + ':' + port + '/', {
+        mode: 'no-cors', cache: 'no-store',
+        signal: ctl ? ctl.signal : undefined
+      }).then(function () {
+        if (settled) return;
+        settled = true; clearTimeout(timer);
+        pnaOk = true;
+        resolve({ ip: ip, port: port, ms: Date.now() - t0 });
+      }).catch(function () {
+        if (settled) return;
+        settled = true; clearTimeout(timer);
+        // 5ms 内失败 = 浏览器直接拦截，不是网络超时
+        if (!pnaOk && Date.now() - t0 < 20) pnaBlocked++;
+        resolve(null);
+      });
+    });
+  }
+
+  /* 扫一个 /24。命中即返回，不等扫完 */
+  function scanSubnet(prefix, token, onTick, concurrency) {
+    var hits = [];
+    var queue = [];
+    for (var i = 1; i <= 254; i++) queue.push(prefix + i);
+    var done = 0, total = 254;
+    var stopped = false;
+
+    return new Promise(function (resolve) {
+      function finish(v) {
+        if (stopped) return;
+        stopped = true;
+        resolve(v);
+      }
+      function pump() {
+        if (stopped) return;
+        if (token !== scanToken) return finish(null);
+        var ip = queue.shift();
+        if (!ip) return;
+        probe(ip, PORT, 900).then(function (hit) {
+          if (stopped) return;
+          if (token !== scanToken) return finish(null);
+          done++;
+          if (hit) {
+            hits.push(hit);
+            onTick(done, total, hits.length);
+            return finish(hits);      // 找到就走
+          }
+          onTick(done, total, hits.length);
+          if (done === total) return finish(hits);
+          pump();
+        });
+      }
+      for (var c = 0; c < (concurrency || 16); c++) pump();
+    });
+  }
+
+  /* 记住上次命中的网段，下次优先 */
+  function rememberNet(prefix) {
+    try { localStorage.setItem('tvbox-net', prefix); } catch (e) {}
+  }
+  function savedNet() {
+    try { return localStorage.getItem('tvbox-net'); } catch (e) { return null; }
+  }
+
+  /* 扫指定网段列表，命中即停 */
+  function discover(token, prefixes) {
+    var idx = 0;
+    var scanned = 0;
+
+    function next() {
+      if (token !== scanToken) return null;
+      if (idx >= prefixes.length) {
+        if (!pnaOk && pnaBlocked > 20) return { blocked: true };
+        return [];
+      }
+      var p = prefixes[idx++];
+      setState('load', '正在找电视…',
+               '扫 ' + p + '1~254' + (prefixes.length > 1 ? '（' + idx + '/' + prefixes.length + '）' : ''));
+      return scanSubnet(p, token, function (d, t, found) {
+        if (token !== scanToken) return;
+        setSel(Math.round(d / t * 100) + '%' + (found ? ' · 找到 ' + found : ''));
+        scanned = d;
+      }, 32).then(function (hits) {
+        if (hits === null) return null;
+        if (hits.length) {
+          rememberNet(p);
+          hits.sort(function (a, b) { return a.ms - b.ms; });
+          return hits;
+        }
+        if (!pnaOk && pnaBlocked > 30) return { blocked: true };
+        return next();
+      });
+    }
+    return next();
+  }
+
+  var brandsEl = document.getElementById('brands');
+  var viewPickEl = document.getElementById('view-pick');
+  var viewScanEl = document.getElementById('view-scan');
+  var rescanBtn = document.getElementById('rescan');
+
+  function savedBrand() {
+    try { return localStorage.getItem('tvbox-brand'); } catch (e) { return null; }
+  }
+  function rememberBrand(id) {
+    try { localStorage.setItem('tvbox-brand', id); } catch (e) {}
+  }
+
+  /* 回到「选网段」视图 */
+  function showBrandStep() {
+    scanToken++;                 // 作废进行中的扫描
+    tv = null;
+    goBtn.disabled = true;
+    picksEl.innerHTML = '';
+    stopCamera();
+    viewPickEl.hidden = false;
+    viewScanEl.hidden = true;
+    renderBrands();
+    var last = savedBrand();
+    document.getElementById('custom-net').value =
+      (last && last.indexOf('.') > -1) ? last : '';
+  }
+
+  function renderBrands() {
+    var last = savedBrand();
+    var html = SUBNETS.map(function (s) {
+      return '<button data-brand="' + s.brand + '">' + s.brand +
+             '<span>' + s.p + 'xxx</span></button>';
+    }).join('');
+    html += '<button class="all" data-brand="*">不知道 / 全都扫<span>扫描常见品牌网段，比较慢</span></button>';
+    brandsEl.innerHTML = html;
+    Array.prototype.forEach.call(brandsEl.querySelectorAll('button'), function (b) {
+      if (last && b.dataset.brand === last) b.classList.add('primary');
+      b.onclick = function () { pickBrand(b.dataset.brand); };
+    });
+  }
+
+  /* 由品牌 id 得到网段列表 */
+  function prefixesOf(id) {
+    if (id === '*') return SUBNETS.map(function (s) { return s.p; });
+    if (id.indexOf('.') > -1) return [id];          // 自定义网段
+    return SUBNETS.filter(function (s) { return s.brand === id; })
+                   .map(function (s) { return s.p; });
+  }
+
+  /* 扫描入口：品牌 id 或自定义前缀都走这里 */
+  function startScan(prefixes, remember) {
+    picksEl.innerHTML = '';
+    document.getElementById('scan-blocked').hidden = true;
+    viewPickEl.hidden = true;
+    viewScanEl.hidden = false;
+    tv = null;
+    goBtn.disabled = true;
+    stopCamera();
+
+    var token = ++scanToken;
+    pnaBlocked = 0; pnaOk = false;
+    setState('load', '正在找电视…', '');
+
+    discover(token, prefixes).then(function (hits) {
+      if (token !== scanToken || !hits) return;
+      if (hits.blocked) return scanFailed('浏览器拦住了本地网络请求');
+      if (!hits.length) return scanFailed('这个网段没找到电视');
+      if (hits.length === 1) return selectTv(hits[0].ip, hits[0].port);
+      setState('warn', '找到 ' + hits.length + ' 台设备', '点一个开始推送');
+      picksEl.innerHTML = hits.map(function (h) {
+        return '<button data-ip="' + h.ip + '" data-port="' + h.port + '">' + h.ip + '</button>';
+      }).join('');
+      Array.prototype.forEach.call(picksEl.querySelectorAll('button'), function (b) {
+        b.onclick = function () { selectTv(b.dataset.ip, b.dataset.port); };
+      });
+    }).catch(function () {
+      if (token === scanToken) scanFailed('查找出错');
+    });
+  }
+
+  function pickBrand(id) {
+    rememberBrand(id);
+    startScan(prefixesOf(id));
+  }
+
+  /* 自定义网段：接受 192.168.100. / 192.168.100 / 192.168.100.0/24 */
+  function parsePrefix(v) {
+    var m = String(v).trim().replace(/^https?:\/\//i, '').match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:\.(\d{1,3}))?/);
+    if (!m) return null;
+    var a = [+m[1], +m[2], +m[3]];
+    if (a.some(function (n) { return n > 255; })) return null;
+    var part = a.join('.') + '.';
+    if (!/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(part)) return null;
+    return part;
+  }
+
+  document.getElementById('custom-go').onclick = function () {
+    var p = parsePrefix(document.getElementById('custom-net').value);
+    if (!p) {
+      setState('warn', '网段格式不对', '要填内网段，像 192.168.100. 或 10.0.5.');
+      return;
+    }
+    document.getElementById('custom-net').value = p;
+    rememberBrand(p);          // 自定义段也记住
+    startScan([p]);
+  };
+
+  rescanBtn.onclick = function () { showBrandStep(); };
+
+  function openModal(url, name) {
+    pending = { url: url, name: name };
+    modal.hidden = false;
+    modalSub.textContent = '准备推送「' + displayName(name) + '」';
+    document.body.style.overflow = 'hidden';
+    applyEnv();
+    showBrandStep();             // 默认落在「选品牌」
+
+    // 上次那台电视还活着就直接选中，但仍可点「重新扫描」换别的
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem('tvbox-tv') || 'null'); } catch (e) {}
+    if (!saved || !saved.ip) return;
+
+    var token = scanToken;
+    probe(saved.ip, saved.port).then(function (hit) {
+      if (!hit || modal.hidden || token !== scanToken) return;
+      selectTv(saved.ip, saved.port);
+      stateSub.textContent = '上次连的就是这台，要换一个就点上面「重新扫描」';
+    });
+  }
+
+  function closeModal() {
+    scanToken++;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    stopCamera();
+  }
+
+  document.getElementById('modal-cancel').onclick = closeModal;
+  modal.onclick = function (e) { if (e.target === modal) closeModal(); };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+  });
+
+  /* 直接调接口推送。no-cors 下读不到响应，只能确认请求发出去了；
+     不同壳子认的参数不同，几种格式一起发，有一个通就行。 */
+  function pushTo(tvDev, url, name) {
+    var base = 'http://' + tvDev.ip + ':' + tvDev.port + '/action';
+    name = displayName(name);
+
+    var bodies = [
+      { do: 'setting', text: url, name: name },
+      { do: 'api', url: url },
+      { do: 'api', type: '1', name: name, url: url },
+      { do: 'pushStore', pushStore_name: name, pushStore_url: url }
+    ];
+
+    return Promise.all(bodies.map(function (p) {
+      var ctl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 4000);
+      return fetch(base, {
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: Object.keys(p).map(function (k) {
+          return encodeURIComponent(k) + '=' + encodeURIComponent(p[k]);
+        }).join('&'),
+        signal: ctl ? ctl.signal : undefined
+      }).then(function () { clearTimeout(timer); return true; },
+              function (e) { clearTimeout(timer); throw e; });
+    })).then(function () { return true; },
+             function () { return false; });
+  }
+
+  goBtn.onclick = function () {
+    if (!tv || !pending) return;
+    var dev = tv;
+    var job = pending;
+
+    goBtn.disabled = true;
+    var label = goBtn.textContent;
+    goBtn.textContent = '推送中…';
+    setState('load', '正在推送…', '');
+
+    pushTo(dev, job.url, job.name).then(function (ok) {
+      goBtn.textContent = label;
+      if (!ok) {
+        goBtn.disabled = false;
+        setState('warn', '推送没发出去',
+          '电视可能不在线，或浏览器拦了本地请求。可以换个 IP 试试');
+        return;
+      }
+      try { localStorage.setItem('tvbox-tv', JSON.stringify(dev)); } catch (e) {}
+      setState('ok', '已推送到电视', dev.ip + ':' + dev.port);
+      setTimeout(closeModal, 900);
+    });
+  };
+
+  /* ---------- 环境判断 ----------
+     https 页面请求 http://192.168.x.x 属于混合内容，浏览器必定拦截 → 扫描不可用。
+     http 页面没有这个问题 → 扫描可用。
+     摄像头要求安全上下文（https 或 localhost）→ 只有 isSecureContext 才有。
+     Tab 一律显示，不可用的标灰并在面板里说明原因。 */
+  var noMixed = location.protocol !== 'https:';
+  var canCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+  function markTab(id, ok, why) {
+    var b = document.getElementById(id);
+    b.classList.toggle('off', !ok);
+    b.title = ok ? '' : why;
+  }
+
+  function applyEnv() {
+    markTab('tab-scan', noMixed, 'https 页面无法访问局域网，需要 http 打开本页');
+    markTab('tab-qr', canCamera, '摄像头需要 https 或 localhost');
+
+    var sub = document.getElementById('modal-sub');
+    if (noMixed && canCamera) sub.textContent = '扫描局域网，或扫电视上的二维码';
+    else if (noMixed) sub.textContent = '扫描局域网，或手填电视 IP';
+    else if (canCamera) sub.textContent = '扫电视上的二维码，或手填 IP';
+    else sub.textContent = '手填电视 IP';
+
+    showTab(noMixed ? 'scan' : (canCamera ? 'qr' : 'manual'));
+  }
+
+  /* ---------- Tab 切换 ---------- */
+
+  function showTab(name) {
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+      b.classList.toggle('on', b.dataset.tab === name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) {
+      p.hidden = p.dataset.panel !== name;
+    });
+    if (name === 'qr') startCamera();
+    else stopCamera();
+    if (name === 'scan') {
+      var blocked = !noMixed;
+      document.getElementById('scan-blocked').hidden = !blocked;
+      document.getElementById('view-pick').hidden = blocked;
+      document.getElementById('view-scan').hidden = true;
+    }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.onclick = function () { showTab(b.dataset.tab); };
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-push]'), function (b) {
+    b.onclick = function () {
+      openModal(b.dataset.push === 'multi' ? multiUrl : singleUrl, b.dataset.name);
+    };
+  });
+
+  manualPanelEl.addEventListener('input', function (e) {
+    if (e.target.tagName !== 'INPUT') return;
+    var ip = ipEl.value.trim();
+    var port = portEl.value.trim() || PORT;
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+      tv = null;
+      goBtn.disabled = true;
+      manualHint.textContent = '';
+      return;
+    }
+    tv = { ip: ip, port: port };
+    goBtn.disabled = false;
+    manualHint.textContent = '将推送到 ' + ip + ':' + port;
+  });
+
+  /* ---------- 扫码兜底 ---------- */
+
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+  }
+
+  function applyCode(text) {
+    var m = String(text).match(/(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?/);
+    if (!m) return;
+    selectTv(m[1], m[2] || PORT);
+  }
+
+  function loadJsQR() {
+    if (window.jsQR) return Promise.resolve(window.jsQR);
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = 'assets/jsqr.js';
+      s.onload = function () { res(window.jsQR); };
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  function startCamera() {
+    video.hidden = true;
+    var wrap = document.getElementById('scanwrap');
+    var blocked = document.getElementById('qr-blocked');
+
+    if (!canCamera) {
+      wrap.hidden = true;
+      blocked.hidden = false;
+      return;
+    }
+    wrap.hidden = false;
+    blocked.hidden = true;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(function (s) {
+        if (modal.hidden || stream) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+        stream = s;
+        video.srcObject = s;
+        video.hidden = false;
+        return video.play();
+      })
+      .then(function () { if (stream) scanLoop(); })
+      .catch(function () {
+        video.hidden = true;
+        wrap.hidden = true;
+        blocked.hidden = false;
+        document.getElementById('qr-blocked').querySelector('.lead').textContent =
+          '没拿到摄像头权限';
+        document.getElementById('qr-blocked').querySelector('.sub').textContent =
+          '在浏览器地址栏的权限设置里允许摄像头后重试，或者用「手填 IP」。';
+      });
+  }
+
+  function scanLoop() {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    var tick = 0, det = 'BarcodeDetector' in window
+      ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+
+    function step() {
+      if (!stream) return;
+      if (video.readyState === video.HAVE_ENOUGH_DATA && (tick++ % 6) === 0) {
+        if (det) {
+          det.detect(video).then(function (codes) {
+            if (codes.length) applyCode(codes[0].rawValue);
+          }).catch(function () {});
+        } else {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          loadJsQR().then(function (jsQR) {
+            var r = jsQR(img.data, canvas.width, canvas.height);
+            if (r && r.data) applyCode(r.data);
+          }).catch(function () {});
+        }
+      }
+      if (stream) requestAnimationFrame(step);
+    }
+    step();
+  }
+
+  fetch(base + 'output/status.json', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (d) {
+      var ss = d.sources || [];
+      var alive = ss.filter(function (s) { return s.ok; }).length;
+
+      document.getElementById('stamp').textContent = '检测于 ' + (d.updated_at || '—');
+      document.getElementById('summary').textContent = alive + ' / ' + ss.length + ' 在线';
+
+      document.getElementById('list').innerHTML = ss.map(function (s) {
+        var st = s.cached ? 'cache' : (s.ok ? 'ok' : 'dead');
+        var note = s.cached ? '拿不到新的，沿用上次'
+                 : s.ok ? (s.used_url || '').replace(/^https?:\/\//, '')
+                 : '连不上，先跳过';
+        return '<div class="row" data-s="' + st + '">' +
+          '<span class="dot"></span>' +
+          '<span class="n">' + esc(s.name) + '</span>' +
+          '<span class="u' + (st === 'dead' ? ' bad' : '') + '" title="' + esc(s.error || '') + '">' + esc(note) + '</span>' +
+          (s.ok ? '<button data-copy="' + esc(fileUrl(s.id + '.json')) + '">复制</button>' : '') +
+        '</div>';
+      }).join('');
+
+      Array.prototype.forEach.call(
+        document.querySelectorAll('#list button'),
+        function (b) { b.onclick = function () { copy(b, b.dataset.copy); }; }
+      );
+    })
+    .catch(function (e) {
+      document.getElementById('summary').innerHTML = '<span class="err">读取失败（' + esc(e) + '）</span>';
+    });
+})();
+</script>
+</body>
+</html>
