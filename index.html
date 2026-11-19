@@ -487,7 +487,7 @@
             </svg>
           </div>
           <p class="qr-title" id="qr-blocked-title">这里打不开摄像头</p>
-          <p class="qr-desc" id="qr-blocked-sub">用下面的框手动输入地址，<br>或者换一台有摄像头的设备。</p>
+          <p class="qr-desc" id="qr-blocked-sub">扫码需要 https 打开本页，<br>也可以切到「手填 IP」。</p>
           <button class="link" id="qr-retry" hidden>重试</button>
         </div>
 
@@ -1278,7 +1278,7 @@
         blocked.hidden = false;
         document.getElementById('qr-blocked-title').textContent = '没拿到摄像头权限';
         document.getElementById('qr-blocked-sub').innerHTML =
-          '在地址栏允许摄像头后点「重试」，<br>或者用「手填 IP」。';
+          '在地址栏允许摄像头后点「重试」，<br>或者切到「手填 IP」。';
         document.getElementById('qr-retry').hidden = false;
       });
   }
