@@ -119,6 +119,38 @@
   }
   button.link:hover{background:none;border-color:currentColor;opacity:.75}
   button.link[hidden]{display:none}
+  .tip{
+    margin:12px 22px 0;padding:9px 13px;border-radius:8px;
+    background:#FAF8F1;border:1px solid var(--line-soft);
+    font-size:11.5px;line-height:1.5;color:var(--mute);
+  }
+  .tip[hidden]{display:none}
+
+  .result{padding:30px 22px 24px;text-align:center}
+  .result[hidden]{display:none}
+  .resart{
+    width:56px;height:56px;margin:0 auto 18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:#E8F3EC;color:var(--live);
+  }
+  .resart svg{width:28px;height:28px}
+  .resart.bad{background:#F6E5E1;color:var(--accent)}
+  .res-title{font-size:15px;font-weight:650;color:var(--ink);margin:0 0 7px}
+  .res-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.6}
+  .res-btn{width:100%;margin-top:22px;padding:11px 18px}
+
+  .pickdev{padding:18px 22px 20px}
+  .pickdev[hidden]{display:none}
+  .pickrow{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .pickrow button{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 15px;border-radius:10px;text-align:left;
+  }
+  .pickrow button .ip{font:13px var(--mono);color:var(--ink)}
+  .pickrow button .go{font-size:11.5px;color:var(--accent);font-weight:600}
+  .pickrow button:hover{border-color:var(--accent)}
+  .flow[hidden]{display:none}
+
   .tabs{display:flex;gap:2px;padding:0 22px;margin-top:14px;border-bottom:1px solid var(--line-soft)}
   .tabs button{
     border:0;border-radius:0;background:none;padding:10px 13px 9px;
@@ -133,9 +165,40 @@
 
   .lead{font-size:13px;color:var(--ink-soft);margin:0 0 14px}
 
-  .scanwrap{text-align:center}
-  .scanwrap video{width:200px;border-radius:9px;background:#000;display:block;margin:0 auto 12px}
-  .scanwrap video[hidden]{display:none}
+  .qrview{text-align:center;padding:10px 0 4px}
+  .qrart{
+    width:56px;height:56px;margin:0 auto 16px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    background:#F1EEE4;color:var(--ink-soft);
+  }
+  .qrart svg{width:26px;height:26px}
+  .qrart.warn{background:#F6E5E1;color:var(--accent)}
+  .qr-title{font-size:14px;font-weight:600;color:var(--ink);margin:0 0 7px}
+  .qr-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.65}
+  .qr-btn{width:100%;margin-top:20px;padding:11px 18px}
+  .qrart.ok{background:#E8F3EC;color:var(--live)}
+  .qr-addr{
+    font:13px var(--mono);color:var(--ink);margin:0 0 14px;
+    padding:9px 12px;border-radius:8px;background:var(--paper);
+    border:1px solid var(--line-soft);display:inline-block;
+  }
+
+  .cam{
+    position:relative;width:210px;margin:0 auto 16px;
+    border-radius:14px;overflow:hidden;background:#171610;
+  }
+  .cam video{width:100%;display:block}
+  .cam video[hidden]{display:none}
+  .cam-frame{position:absolute;inset:14px;pointer-events:none}
+  .cam-frame i{
+    position:absolute;width:18px;height:18px;
+    border:2px solid rgba(255,255,255,.85);
+  }
+  .cam-frame i:nth-child(1){top:0;left:0;border-right:0;border-bottom:0;border-radius:5px 0 0 0}
+  .cam-frame i:nth-child(2){top:0;right:0;border-left:0;border-bottom:0;border-radius:0 5px 0 0}
+  .cam-frame i:nth-child(3){bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 5px}
+  .cam-frame i:nth-child(4){bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 5px 0}
+  .qr-stop{margin:16px auto 0}
 
   .http-link{
     display:inline-block;margin-top:14px;font-size:12.5px;font-weight:600;
@@ -182,7 +245,9 @@
   .modal-foot{
     display:flex;gap:8px;padding:0 22px 20px;
   }
+  .modal-foot[hidden]{display:none}
   .modal-foot button{flex:1}
+  .modal-foot button[hidden]{display:none}
   .push-go{background:var(--accent);border-color:var(--accent);color:#FFF6F1}
   .push-go:hover{background:#AC3921;border-color:#AC3921}
   .push-go:disabled{opacity:.45}
@@ -316,6 +381,28 @@
       <h3 id="modal-title">推送到电视</h3>
       <p id="modal-sub">正在查找同一网络里的电视</p>
     </div>
+
+    <p class="tip" id="tip">先打开电视上的 TVBox →「设置 → 配置」页面，推送才能生效</p>
+    <div class="result" id="result" hidden>
+      <div class="resart" id="resart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <p class="res-title" id="res-title">推送成功</p>
+      <p class="res-desc" id="res-desc"></p>
+      <button class="push-go res-btn" id="res-close">完成</button>
+    </div>
+
+    <div class="pickdev" id="pickdev" hidden>
+      <p class="lead">选择要推送的电视</p>
+      <div class="pickrow" id="pickrow"></div>
+      <button class="link" id="pick-new">用其他电视</button>
+    </div>
+
+    <div class="flow" id="flow" hidden>
+
     <div class="tabs" role="tablist">
       <button role="tab" data-tab="scan" id="tab-scan" class="on">扫描</button>
       <button role="tab" data-tab="qr" id="tab-qr">扫码</button>
@@ -331,7 +418,6 @@
           <p class="lead">这个链接没法自动找电视</p>
           <p class="sub">用下面这个链接打开，就能自动搜索了。</p>
           <a class="http-link" id="http-link" href="#">换个链接打开</a>
-          <p class="sub" id="http-note"></p>
         </div>
 
         <!-- 视图一：选网段 -->
@@ -361,15 +447,59 @@
 
       <!-- 扫码 -->
       <div class="panel" data-panel="qr" hidden>
-        <div class="scanwrap" id="scanwrap">
-          <video id="scan-video" playsinline muted></video>
-          <p class="sub">电视打开「设置 → 配置接口」，把屏幕上的二维码对准摄像头</p>
+
+        <!-- 起始视图 -->
+        <div class="view qrview" id="qr-start">
+          <div class="qrart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+              <path d="M3 12h18"/>
+            </svg>
+          </div>
+          <p class="qr-title">扫电视上的二维码</p>
+          <p class="qr-desc">电视打开「设置 → 配置接口」，<br>屏幕会显示一个二维码。</p>
+          <button class="push-go qr-btn" id="qr-begin">开始扫描</button>
         </div>
-        <div class="view" id="qr-blocked" hidden>
-          <p class="lead" id="qr-blocked-title">这里打不开摄像头</p>
-          <p class="sub" id="qr-blocked-sub">换个链接打开就能扫码，或者用「手填 IP」。</p>
+
+        <!-- 取景中 -->
+        <div class="qrview" id="scanwrap" hidden>
+          <div class="cam">
+            <video id="scan-video" playsinline muted></video>
+            <div class="cam-frame"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <p class="qr-desc">对准二维码，识别到会自动继续</p>
+          <button class="link qr-stop" id="qr-stop">停止扫描</button>
+        </div>
+
+        <!-- 已识别 -->
+        <div class="view qrview" id="qr-found" hidden>
+          <div class="qrart ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </div>
+          <p class="qr-title">已识别到电视</p>
+          <p class="qr-addr" id="qr-addr"></p>
+          <button class="link" id="qr-again">重新扫描</button>
+        </div>
+
+        <!-- 不可用 -->
+        <div class="view qrview" id="qr-blocked" hidden>
+          <div class="qrart warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 8v5M12 16.5v.01"/>
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+          </div>
+          <p class="qr-title" id="qr-blocked-title">这里打不开摄像头</p>
+          <p class="qr-desc" id="qr-blocked-sub">换个链接打开就能扫码，<br>或者用「手填 IP」。</p>
           <a class="http-link" id="https-link" href="#" hidden>换个链接打开</a>
+          <button class="link" id="qr-retry" hidden>重试</button>
         </div>
+
       </div>
 
       <!-- 手填 -->
@@ -383,9 +513,11 @@
         <p class="sub" id="manual-hint"></p>
       </div>
     </div>
-    <div class="modal-foot">
-      <button id="modal-cancel">取消</button>
-      <button id="modal-go" class="push-go" disabled>推送到电视</button>
+    </div><!-- /flow -->
+
+    <div class="modal-foot" id="foot">
+      <button id="modal-close">完成</button>
+      <button id="modal-go" class="push-go" disabled hidden>推送到电视</button>
     </div>
   </div>
 </div>
@@ -452,15 +584,35 @@
 
   var tv = null;              // { ip, port }
   var pending = null;         // { url, name }
+  var pendingKind = null;     // 'multi' | 'single'，跨页面恢复用
   /* 推送名统一带前缀，避免和其他源混淆 */
   var NAME_PREFIX = 'SoulChild · ';
   function displayName(name) { return NAME_PREFIX + name; }
   var stream = null;
+  var camToken = 0;           // 每次开/停递增，废弃过期的授权结果
   var scanToken = 0;          // 每次打开/取消自增，废弃过期结果
 
   // 家用路由器出厂默认网段，按 2025 年国内线上销量份额排序（洛图科技数据）：
   // 小米 30%、华为 25%、普联 20%、中兴 15%、腾达 5%。
   // 浏览器拿不到本机内网 IP（WebRTC 已 mDNS 混淆），只能盲扫。
+  /* ---------- 设备记忆 ----------
+     扫码 / 扫描 / 手填拿到的设备都记下来，下次直接选。 */
+  var DEV_KEY = 'tvbox-devices';
+
+  function devices() {
+    try {
+      var v = JSON.parse(localStorage.getItem(DEV_KEY) || '[]');
+      return Array.isArray(v) ? v.filter(function (d) { return d && d.ip; }) : [];
+    } catch (e) { return []; }
+  }
+
+  function rememberDevice(ip, port) {
+    port = String(port || PORT);
+    var list = devices().filter(function (d) { return d.ip !== ip || d.port !== port; });
+    list.unshift({ ip: ip, port: port, at: Date.now() });
+    try { localStorage.setItem(DEV_KEY, JSON.stringify(list.slice(0, 6))); } catch (e) {}
+  }
+
   var SUBNETS = [
     { p: '192.168.31.', brand: '小米' },
     { p: '192.168.3.',  brand: '华为' },
@@ -492,6 +644,8 @@
     stopCamera();
     goBtn.disabled = false;
   }
+
+  /* ---------- 设备列表 ---------- */
 
   /* 扫描失败就不再自动兜底，只提示用户切 Tab */
   function scanFailed(msg) {
@@ -721,15 +875,110 @@
 
   rescanBtn.onclick = function () { showBrandStep(); };
 
-  function openModal(url, name) {
+  var footEl = document.getElementById('foot');
+  var resultEl = document.getElementById('result');
+  var pickdevEl = document.getElementById('pickdev');
+  var pickrowEl = document.getElementById('pickrow');
+  var flowEl = document.getElementById('flow');
+
+  /* footer 两种形态：只有「完成」，或「完成 + 推送到电视」 */
+  function showFoot(withPush) {
+    footEl.hidden = false;
+    goBtn.hidden = !withPush;
+  }
+  function hideFoot() { footEl.hidden = true; }
+
+  function openModal(url, name, kind) {
+    pendingKind = kind || null;
     pending = { url: url, name: name };
     modal.hidden = false;
     modalSub.textContent = '准备推送「' + displayName(name) + '」';
     document.body.style.overflow = 'hidden';
-    applyEnv();
-    showBrandStep();             // 默认落在「选品牌」
 
-    // 上次那台电视还活着就直接选中，但仍可点「重新扫描」换别的
+    var list = devices();
+    resultEl.hidden = true;
+    document.getElementById('tip').hidden = false;
+
+    if (list.length) {
+      // 有历史设备：先让用户选一台（点一下就推，底部不需要推送按钮）
+      renderPick(list);
+      pickdevEl.hidden = false;
+      flowEl.hidden = true;
+      showFoot(false);
+      return;
+    }
+    // 没有历史设备：直接走原有流程
+    pickdevEl.hidden = true;
+    flowEl.hidden = false;
+    showFoot(true);
+    startFlow();
+  }
+
+  function renderPick(list) {
+    pickrowEl.innerHTML = list.map(function (d) {
+      return '<button data-ip="' + esc(d.ip) + '" data-port="' + esc(d.port) + '">' +
+        '<span class="ip">' + esc(d.ip) + '</span>' +
+        '<span class="go">推送到这台</span>' +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(pickrowEl.querySelectorAll('button'), function (b) {
+      b.onclick = function () {
+        // 不进扫描界面，直接切到「推送中」的结果页，避免闪一下
+        tv = { ip: b.dataset.ip, port: b.dataset.port };
+        resultEl.hidden = false;
+        pickdevEl.hidden = true;
+        flowEl.hidden = true;
+        hideFoot();
+        var art = document.getElementById('resart');
+        art.className = 'resart';
+        art.innerHTML = '<span class="spin"></span>';
+        document.getElementById('res-title').textContent = '正在推送…';
+        document.getElementById('res-desc').textContent =
+          '推送到 ' + b.dataset.ip;
+        document.getElementById('res-close').hidden = true;
+        doPush();
+      };
+    });
+  }
+
+  document.getElementById('pick-new').onclick = function () {
+    pickdevEl.hidden = true;
+    flowEl.hidden = false;
+    document.getElementById('tip').hidden = false;
+    showFoot(true);
+    startFlow();
+  };
+
+  /* 推送结果页：成功/失败都在这里停住，等用户点「完成」 */
+  function showResult(ok, dev, reason) {
+    pickdevEl.hidden = true;
+    flowEl.hidden = true;
+    resultEl.hidden = false;
+    document.getElementById('tip').hidden = true;
+    hideFoot();
+
+    var art = document.getElementById('resart');
+    art.className = 'resart' + (ok ? '' : ' bad');
+    art.innerHTML = ok
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+    document.getElementById('res-close').hidden = false;
+    document.getElementById('res-title').textContent = ok ? '推送成功' : '推送失败';
+    document.getElementById('res-desc').innerHTML = ok
+      ? '已推送到 ' + esc(dev.ip) + ':' + esc(dev.port) +
+        '<br>电视上没反应的话，确认它正停在「配置」页面'
+      : (reason || '电视可能不在线') + '<br>检查电视和手机是否在同一个 WiFi';
+  }
+
+  document.getElementById('res-close').onclick = closeModal;
+
+  /* 进原有流程：环境判断 + 选网段 + 旧设备探测 */
+  function startFlow() {
+    applyEnv();
+    showBrandStep();
+
+    if (!noMixed) return;
+
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem('tvbox-tv') || 'null'); } catch (e) {}
     if (!saved || !saved.ip) return;
@@ -737,19 +986,23 @@
     var token = scanToken;
     probe(saved.ip, saved.port).then(function (hit) {
       if (!hit || modal.hidden || token !== scanToken) return;
+      if (goBtn.disabled === false) return;
       selectTv(saved.ip, saved.port);
-      stateSub.textContent = '上次连的就是这台，要换一个就点上面「重新扫描」';
     });
   }
 
   function closeModal() {
     scanToken++;
+    pickdevEl.hidden = true;
+    flowEl.hidden = true;
+    resultEl.hidden = true;
+    document.getElementById('res-close').hidden = false;
     modal.hidden = true;
     document.body.style.overflow = '';
     stopCamera();
   }
 
-  document.getElementById('modal-cancel').onclick = closeModal;
+  document.getElementById('modal-close').onclick = closeModal;
   modal.onclick = function (e) { if (e.target === modal) closeModal(); };
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !modal.hidden) closeModal();
@@ -786,10 +1039,13 @@
              function () { return false; });
   }
 
-  goBtn.onclick = function () {
+  function doPush() {
     if (!tv || !pending) return;
     var dev = tv;
     var job = pending;
+
+    // https 发不出局域网请求：带着设备跳到 http 版，那边继续推
+    if (!noMixed) { hopToHttp(dev.ip, dev.port); return; }
 
     goBtn.disabled = true;
     var label = goBtn.textContent;
@@ -802,19 +1058,44 @@
         goBtn.disabled = false;
         setState('warn', '推送没发出去',
           '电视可能不在线，或浏览器拦了本地请求。可以换个 IP 试试');
+        showResult(false, dev, '没连上这台电视');
         return;
       }
       try { localStorage.setItem('tvbox-tv', JSON.stringify(dev)); } catch (e) {}
-      setState('ok', '已推送到电视', dev.ip + ':' + dev.port);
-      setTimeout(closeModal, 900);
+      rememberDevice(dev.ip, dev.port);
+        setState('ok', '推送成功', dev.ip + ':' + dev.port);
+      showResult(true, dev);
     });
-  };
+  }
+
+  /* 拿到设备就直接推，不用再点一次按钮 */
+  goBtn.onclick = doPush;
+
+  /* 扫码面板的三种状态 */
+  function showQrStart() {
+    camToken++;
+    stopCamera();
+    document.getElementById('qr-retry').hidden = true;
+    var can = canCamera;
+    document.getElementById('qr-start').hidden = !can;
+    document.getElementById('scanwrap').hidden = true;
+    document.getElementById('qr-found').hidden = true;
+    document.getElementById('qr-blocked').hidden = can;
+    if (!can) {
+      var link = document.getElementById('https-link');
+      if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+        link.href = 'https:' + location.href.slice(5);
+        link.hidden = false;
+      } else {
+        link.hidden = true;
+      }
+    }
+  }
 
   /* ---------- 环境判断 ----------
-     https 页面请求 http://192.168.x.x 属于混合内容，浏览器必定拦截 → 扫描不可用。
-     http 页面没有这个问题 → 扫描可用。
-     摄像头要求安全上下文（https 或 localhost）→ 只有 isSecureContext 才有。
-     Tab 一律显示，不可用的标灰并在面板里说明原因。 */
+     https 页面请求 http://192.168.x.x 属于混合内容，浏览器必定拦截 → 扫描、推送都不可用。
+     http 页面没有这个问题 → 全部可用。
+     摄像头要求安全上下文（https 或 localhost）→ 只有 https 才有。 */
   var noMixed = location.protocol !== 'https:';
   var canCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
@@ -825,9 +1106,8 @@
   }
 
   function applyEnv() {
-    markTab('tab-scan', noMixed, 'https 页面无法访问局域网，需要 http 打开本页');
-    setupHttpLink();
-    markTab('tab-qr', canCamera, '摄像头需要 https 或 localhost');
+    markTab('tab-scan', noMixed, '用另一个链接打开就能自动找电视');
+    markTab('tab-qr', canCamera, '用另一个链接打开就能扫码');
 
     var sub = document.getElementById('modal-sub');
     if (noMixed && canCamera) sub.textContent = '扫描局域网，或扫电视上的二维码';
@@ -840,17 +1120,15 @@
 
   /* ---------- Tab 切换 ---------- */
 
-  /* https 下给一条切到 http 的入口；页面在 http 打开时把地址存起来供反向使用 */
+  /* https 下给「换个链接打开」填上 http 地址 */
   function setupHttpLink() {
     var link = document.getElementById('http-link');
-    var note = document.getElementById('http-note');
     if (!link) return;
     if (location.protocol === 'https:') {
       link.href = 'http:' + location.href.slice(6);
       link.hidden = false;
     } else {
       link.hidden = true;
-      if (note) note.textContent = '';
     }
   }
 
@@ -861,13 +1139,19 @@
     Array.prototype.forEach.call(document.querySelectorAll('.panel'), function (p) {
       p.hidden = p.dataset.panel !== name;
     });
-    if (name === 'qr') startCamera();
-    else stopCamera();
+    if (name === 'qr') {
+      // 不自动申请摄像头权限，等用户点「开始扫描」
+      showQrStart();
+    } else {
+      stopCamera();
+    }
+    if (name !== 'scan') scanToken++;   // 作废还在跑的局域网扫描
     if (name === 'scan') {
       var blocked = !noMixed;
       document.getElementById('scan-blocked').hidden = !blocked;
       document.getElementById('view-pick').hidden = blocked;
       document.getElementById('view-scan').hidden = true;
+      if (blocked) setupHttpLink();
     }
   }
 
@@ -875,17 +1159,40 @@
     b.onclick = function () { showTab(b.dataset.tab); };
   });
 
+  document.getElementById('qr-begin').onclick = startCamera;
+  document.getElementById('qr-stop').onclick = showQrStart;
+  document.getElementById('qr-retry').onclick = function () {
+    showQrStart();      // 回到「开始扫描」，由用户再点一次
+  };
+
+  document.getElementById('qr-again').onclick = function () {
+    tv = null;
+    goBtn.disabled = true;
+    showQrStart();
+    startCamera();
+  };
+
   Array.prototype.forEach.call(document.querySelectorAll('[data-push]'), function (b) {
     b.onclick = function () {
-      openModal(b.dataset.push === 'multi' ? multiUrl : singleUrl, b.dataset.name);
+      var kind = b.dataset.push;
+      openModal(kind === 'multi' ? multiUrl : singleUrl, b.dataset.name, kind);
     };
+  });
+
+  /* 失焦时才记设备，避免每敲一个字符存一条 */
+  manualPanelEl.addEventListener('change', function (e) {
+    if (e.target.tagName !== 'INPUT') return;
+    if (tv) rememberDevice(tv.ip, tv.port);
   });
 
   manualPanelEl.addEventListener('input', function (e) {
     if (e.target.tagName !== 'INPUT') return;
     var ip = ipEl.value.trim();
     var port = portEl.value.trim() || PORT;
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+    var okIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(ip) &&
+               ip.split('.').every(function (n) { return +n <= 255; });
+    var okPort = /^\d{1,5}$/.test(port) && +port >= 1 && +port <= 65535;
+    if (!okIp || !okPort) {
       tv = null;
       goBtn.disabled = true;
       manualHint.textContent = '';
@@ -905,59 +1212,84 @@
   function applyCode(text) {
     var m = String(text).match(/(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?/);
     if (!m) return;
-    selectTv(m[1], m[2] || PORT);
+    var ip = m[1], port = m[2] || PORT;
+
+    rememberDevice(ip, port);
+    selectTv(ip, port);
+    stopCamera();
+
+    // 展示识别结果，等用户自己点「推送到电视」
+    document.getElementById('qr-start').hidden = true;
+    document.getElementById('scanwrap').hidden = true;
+    document.getElementById('qr-blocked').hidden = true;
+    document.getElementById('qr-found').hidden = false;
+    document.getElementById('qr-addr').textContent = ip + ':' + port;
   }
 
+  /* 带着设备和待推送的源跳到 http 版同一页，过去自动继续 */
+  function hopToHttp(ip, port) {
+    setState('load', '正在换到可推送的链接…', '');
+    var base = location.href.replace(/^https:/, 'http:').split('#')[0]
+                       .replace(/[?&](device|src)=[^&]*/g, '')
+                       .replace(/[?&]$/, '');
+    var sep = base.indexOf('?') > -1 ? '&' : '?';
+    location.replace(base + sep +
+      'device=' + encodeURIComponent(ip + ':' + port) +
+      (pendingKind ? '&src=' + pendingKind : ''));
+  }
+
+  var jsqrPromise = null;
   function loadJsQR() {
     if (window.jsQR) return Promise.resolve(window.jsQR);
-    return new Promise(function (res, rej) {
+    if (jsqrPromise) return jsqrPromise;      // 只加载一次
+    jsqrPromise = new Promise(function (res, rej) {
       var s = document.createElement('script');
       s.src = 'assets/jsqr.js';
       s.onload = function () { res(window.jsQR); };
-      s.onerror = rej;
+      s.onerror = function () { jsqrPromise = null; rej(new Error('jsqr load failed')); };
       document.head.appendChild(s);
     });
+    return jsqrPromise;
   }
 
   function startCamera() {
-    video.hidden = true;
+    var start = document.getElementById('qr-start');
     var wrap = document.getElementById('scanwrap');
     var blocked = document.getElementById('qr-blocked');
 
-    if (!canCamera) {
-      wrap.hidden = true;
-      blocked.hidden = false;
-      var link = document.getElementById('https-link');
-      // http 页面（非 localhost）拿不到摄像头，给一条切 https 的入口
-      if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
-        link.href = 'https:' + location.href.slice(5);
-        link.hidden = false;
-        document.getElementById('qr-blocked-sub').textContent =
-          '换个链接打开就能扫码，或者用「手填 IP」。';
-      } else {
-        link.hidden = true;
-      }
-      return;
-    }
+    if (!canCamera) return showQrStart();
+
+    start.hidden = true;
     wrap.hidden = false;
     blocked.hidden = true;
+    video.hidden = true;
+
+    var requestToken = ++camToken;
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(function (s) {
-        if (modal.hidden || stream) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+        // 授权期间用户点了停止或关掉了弹窗
+        if (requestToken !== camToken || modal.hidden || stream) {
+          s.getTracks().forEach(function (t) { t.stop(); });
+          return;
+        }
         stream = s;
         video.srcObject = s;
         video.hidden = false;
         return video.play();
       })
-      .then(function () { if (stream) scanLoop(); })
+      .then(function () { if (stream && requestToken === camToken) scanLoop(); })
       .catch(function () {
+        if (requestToken !== camToken) return;   // 已被停止/重开，忽略旧结果
+        stopCamera();
         video.hidden = true;
         wrap.hidden = true;
+        start.hidden = true;
         blocked.hidden = false;
         document.getElementById('https-link').hidden = true;
         document.getElementById('qr-blocked-title').textContent = '没拿到摄像头权限';
-        document.getElementById('qr-blocked-sub').textContent =
-          '允许之后就能扫，或者直接用「手填 IP」。';
+        document.getElementById('qr-blocked-sub').innerHTML =
+          '允许之后就能扫，<br>或者直接用「手填 IP」。';
+        document.getElementById('qr-retry').hidden = false;
       });
   }
 
@@ -967,12 +1299,15 @@
     var tick = 0, det = 'BarcodeDetector' in window
       ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
 
+    var done = false;
     function step() {
-      if (!stream) return;
+      if (!stream || done) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA && (tick++ % 6) === 0) {
         if (det) {
           det.detect(video).then(function (codes) {
-            if (codes.length) applyCode(codes[0].rawValue);
+            if (done || !stream || !codes.length) return;
+            done = true;
+            applyCode(codes[0].rawValue);
           }).catch(function () {});
         } else {
           canvas.width = video.videoWidth;
@@ -980,8 +1315,9 @@
           ctx.drawImage(video, 0, 0);
           var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
           loadJsQR().then(function (jsQR) {
+            if (done || !stream) return;
             var r = jsQR(img.data, canvas.width, canvas.height);
-            if (r && r.data) applyCode(r.data);
+            if (r && r.data) { done = true; applyCode(r.data); }
           }).catch(function () {});
         }
       }
@@ -989,6 +1325,54 @@
     }
     step();
   }
+
+  /* 从 https 页面带过来的设备（扫码后自动跳转），继续完成推送 */
+  (function resumeFromUrl() {
+    if (location.protocol === 'https:') return;   // https 推不出去
+    var md = location.search.match(/[?&]device=([^&]+)/);
+    if (!md) return;
+    var p = decodeURIComponent(md[1]).match(/^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?$/);
+    if (!p) return;
+
+    var ip = p[1], port = p[2] || PORT;
+    var src = (location.search.match(/[?&]src=(\w+)/) || [])[1];
+
+    rememberDevice(ip, port);
+
+    // 清掉参数，避免刷新时重复
+    if (history.replaceState) history.replaceState(null, '', location.pathname);
+
+    var job = src === 'single'
+      ? { url: singleUrl, name: '单仓聚合' }
+      : src === 'multi'
+        ? { url: multiUrl, name: '多仓订阅' }
+        : null;
+
+    if (!job) return;
+
+    // 从 https 跳过来：停在「已识别」这一步，等用户点推送
+    setTimeout(function () {
+      pendingKind = src;
+      pending = { url: job.url, name: job.name };
+      modal.hidden = false;
+      modalSub.textContent = '准备推送「' + displayName(job.name) + '」';
+      document.body.style.overflow = 'hidden';
+      document.getElementById('pickdev').hidden = true;
+      document.getElementById('result').hidden = true;
+      document.getElementById('tip').hidden = false;
+      document.getElementById('flow').hidden = false;
+      showFoot(true);
+      applyEnv();
+      showBrandStep();
+      showTab('qr');
+      selectTv(ip, port);
+      document.getElementById('qr-start').hidden = true;
+      document.getElementById('scanwrap').hidden = true;
+      document.getElementById('qr-blocked').hidden = true;
+      document.getElementById('qr-found').hidden = false;
+      document.getElementById('qr-addr').textContent = ip + ':' + port;
+    }, 0);
+  })();
 
   fetch(base + 'output/status.json', { cache: 'no-cache' })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
