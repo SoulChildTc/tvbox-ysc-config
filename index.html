@@ -183,9 +183,6 @@
   .qr-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.65}
   .qr-btn{width:100%;margin-top:20px;padding:11px 18px}
   .qrart.ok{background:#E8F3EC;color:var(--live)}
-  .warnline{color:var(--cache);margin-top:8px}
-  .warnline[hidden]{display:none}
-
   .qr-addr{
     font:13px var(--mono);color:var(--ink);margin:0 0 14px;
     padding:9px 12px;border-radius:8px;background:var(--paper);
@@ -520,7 +517,6 @@
           <input id="tv-port" class="port" inputmode="numeric" value="9978" autocomplete="off">
         </div>
         <p class="sub" id="manual-hint"></p>
-        <p class="sub warnline" id="manual-https" hidden>当前页面推不出去，点「推送到电视」会自动换到可用的链接</p>
       </div>
     </div>
     </div><!-- /flow -->
@@ -1194,7 +1190,6 @@
       stopCamera();
     }
     if (name !== 'scan') scanToken++;   // 作废还在跑的局域网扫描
-    document.getElementById('manual-https').hidden = noMixed || name !== 'manual';
     if (name === 'scan') {
       var blocked = !noMixed;
       document.getElementById('scan-blocked').hidden = !blocked;
