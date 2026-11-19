@@ -665,7 +665,8 @@
                               .replace(/[?&](device|src|scan)=[^&]*/g, '')
                               .replace(/[?&]$/, '');
       var sep = base.indexOf('?') > -1 ? '&' : '?';
-      setTimeout(function () { location.replace(base + sep + 'scan=1'); }, 80);
+      var url = base + sep + 'scan=1' + (pendingKind ? '&kind=' + pendingKind : '');
+      setTimeout(function () { location.replace(url); }, 80);
       return;
     }
     setState('warn', msg, '可以切到「扫码」或「手填 IP」');
@@ -674,8 +675,6 @@
   /* 探测单机：no-cors 下能 resolve 说明端口有服务。
      路径用 / —— 任何 HTTP 服务都会响应根路径，比 /device 通用。
      blocked 标记浏览器拦截（PNA），用于区分「网络不通」和「被权限拦了」。 */
-  var pnaBlocked = 0;      // 连续被拦截的次数
-  var pnaOk = false;       // 是否有过一次成功，成功过就不再当成拦截
 
   function probe(ip, port, timeout) {
     return new Promise(function (resolve) {
@@ -686,7 +685,7 @@
         if (settled) return;
         settled = true;
         if (ctl) ctl.abort();
-        resolve(null);
+        resolve({ fail: true, ms: Date.now() - t0, timeout: true });
       }, timeout || 700);
       fetch('http://' + ip + ':' + port + '/', {
         mode: 'no-cors', cache: 'no-store',
@@ -695,25 +694,26 @@
       }).then(function () {
         if (settled) return;
         settled = true; clearTimeout(timer);
-        pnaOk = true;
         resolve({ ip: ip, port: port, ms: Date.now() - t0 });
       }).catch(function () {
         if (settled) return;
         settled = true; clearTimeout(timer);
-        // 5ms 内失败 = 浏览器直接拦截，不是网络超时
-        if (!pnaOk && Date.now() - t0 < 20) pnaBlocked++;
-        resolve(null);
+        resolve({ fail: true, ms: Date.now() - t0 });
       });
     });
   }
 
-  /* 扫一个 /24。命中即返回，不等扫完 */
+  /* 扫一个 /24。命中即返回，不等扫完。
+     顺带统计「最快失败耗时」：浏览器拦截是秒拒，网络不通要等超时。 */
+  var fastestFail = Infinity;
+
   function scanSubnet(prefix, token, onTick, concurrency) {
     var hits = [];
     var queue = [];
     for (var i = 1; i <= 254; i++) queue.push(prefix + i);
     var done = 0, total = 254;
     var stopped = false;
+    fastestFail = Infinity;
 
     return new Promise(function (resolve) {
       function finish(v) {
@@ -726,14 +726,16 @@
         if (token !== scanToken) return finish(null);
         var ip = queue.shift();
         if (!ip) return;
-        probe(ip, PORT, 900).then(function (hit) {
+        probe(ip, PORT, 900).then(function (r) {
           if (stopped) return;
           if (token !== scanToken) return finish(null);
           done++;
-          if (hit) {
-            hits.push(hit);
+          if (r && r.fail) {
+            if (r.ms < fastestFail) fastestFail = r.ms;
+          } else if (r) {
+            hits.push(r);
             onTick(done, total, hits.length);
-            return finish(hits);      // 找到就走
+            return finish(hits);
           }
           onTick(done, total, hits.length);
           if (done === total) return finish(hits);
@@ -759,10 +761,7 @@
 
     function next() {
       if (token !== scanToken) return null;
-      if (idx >= prefixes.length) {
-        if (!pnaOk && pnaBlocked > 20) return { blocked: true };
-        return [];
-      }
+      if (idx >= prefixes.length) return [];
       var p = prefixes[idx++];
       setState('load', '正在找电视…',
                '扫 ' + p + '1~254' + (prefixes.length > 1 ? '（' + idx + '/' + prefixes.length + '）' : ''));
@@ -777,7 +776,10 @@
           hits.sort(function (a, b) { return a.ms - b.ms; });
           return hits;
         }
-        if (!pnaOk && pnaBlocked > 30) return { blocked: true };
+        // https 下全部秒拒 = 被浏览器拦；其余情况当作网段里没设备
+        if (location.protocol === 'https:' && fastestFail < 50) {
+          return { blocked: true };
+        }
         return next();
       });
     }
@@ -843,7 +845,6 @@
     stopCamera();
 
     var token = ++scanToken;
-    pnaBlocked = 0; pnaOk = false;
     setState('load', '正在找电视…', '');
 
     discover(token, prefixes).then(function (hits) {
@@ -1382,10 +1383,12 @@
 
     // 从 https 换过来重新扫描
     if (/[?&]scan=1/.test(location.search)) {
+      var kind = (location.search.match(/[?&]kind=(\w+)/) || [])[1] || 'multi';
       if (history.replaceState) history.replaceState(null, '', location.pathname);
       setTimeout(function () {
         var last = localStorage.getItem('tvbox-brand');
-        openModal(multiUrl, '多仓订阅', 'multi');
+        openModal(kind === 'single' ? singleUrl : multiUrl,
+                  kind === 'single' ? '单仓聚合' : '多仓订阅', kind);
         if (last) pickBrand(last.indexOf('.') > -1 ? '*' : last);
       }, 0);
       return;
