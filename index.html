@@ -183,6 +183,13 @@
   .qr-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.65}
   .qr-btn{width:100%;margin-top:20px;padding:11px 18px}
   .qrart.ok{background:#E8F3EC;color:var(--live)}
+  .http-link{
+    display:inline-block;margin-top:14px;font-size:12.5px;font-weight:600;
+    color:var(--accent);text-decoration:none;border-bottom:1px solid currentColor;
+    padding-bottom:1px;
+  }
+  .http-link:hover{opacity:.75}
+
   .qr-addr{
     font:13px var(--mono);color:var(--ink);margin:0 0 14px;
     padding:9px 12px;border-radius:8px;background:var(--paper);
@@ -487,7 +494,8 @@
             </svg>
           </div>
           <p class="qr-title" id="qr-blocked-title">这里打不开摄像头</p>
-          <p class="qr-desc" id="qr-blocked-sub">扫码需要 https 打开本页，<br>也可以切到「手填 IP」。</p>
+          <p class="qr-desc" id="qr-blocked-sub">换个安全的链接打开就能扫码，<br>也可以切到「手填 IP」。</p>
+          <a class="http-link" id="https-link" href="#" hidden>换个链接打开</a>
           <button class="link" id="qr-retry" hidden>重试</button>
         </div>
 
@@ -1110,6 +1118,18 @@
     document.getElementById('scanwrap').hidden = true;
     document.getElementById('qr-found').hidden = true;
     document.getElementById('qr-blocked').hidden = canCamera;
+
+    var link = document.getElementById('https-link');
+    if (canCamera) {
+      link.hidden = true;
+    } else if (location.protocol === 'http:' &&
+               !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+      // 局域网 http 换到 https 才有摄像头
+      link.href = 'https:' + location.href.slice(5);
+      link.hidden = false;
+    } else {
+      link.hidden = true;
+    }
   }
 
   /* ---------- 环境判断 ----------
@@ -1276,6 +1296,7 @@
         wrap.hidden = true;
         start.hidden = true;
         blocked.hidden = false;
+        document.getElementById('https-link').hidden = true;
         document.getElementById('qr-blocked-title').textContent = '没拿到摄像头权限';
         document.getElementById('qr-blocked-sub').innerHTML =
           '在地址栏允许摄像头后点「重试」，<br>或者切到「手填 IP」。';
