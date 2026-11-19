@@ -79,6 +79,13 @@
       "urls": [
         "http://ztha.top/TVBox/GYCK.json"
       ]
+    },
+    {
+      "id": "citong",
+      "name": "刺桐娱乐",
+      "urls": [
+        "https://www.cttv.vip/ys/json/ctys.json"
+      ]
     }
   ]
 }
