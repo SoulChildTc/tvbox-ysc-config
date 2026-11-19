@@ -142,13 +142,19 @@
   .pickdev{padding:18px 22px 20px}
   .pickdev[hidden]{display:none}
   .pickrow{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-  .pickrow button{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 15px;border-radius:10px;text-align:left;
+  .pickitem{display:flex;align-items:stretch;gap:0}
+  .pick-go{
+    flex:1;display:flex;align-items:center;justify-content:space-between;
+    padding:12px 15px;border-radius:10px 0 0 10px;text-align:left;border-right:0;
   }
-  .pickrow button .ip{font:13px var(--mono);color:var(--ink)}
-  .pickrow button .go{font-size:11.5px;color:var(--accent);font-weight:600}
-  .pickrow button:hover{border-color:var(--accent)}
+  .pick-go .ip{font:13px var(--mono);color:var(--ink)}
+  .pick-go .go{font-size:11.5px;color:var(--accent);font-weight:600}
+  .pick-go:hover{border-color:var(--accent);background:#FCFAF3}
+  .pick-del{
+    width:40px;flex:none;border-radius:0 10px 10px 0;
+    font:15px/1 var(--sans);color:var(--mute);padding:0;
+  }
+  .pick-del:hover{background:#F6E5E1;color:var(--accent);border-color:var(--accent)}
   .flow[hidden]{display:none}
 
   .tabs{display:flex;gap:2px;padding:0 22px;margin-top:14px;border-bottom:1px solid var(--line-soft)}
@@ -177,6 +183,9 @@
   .qr-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.65}
   .qr-btn{width:100%;margin-top:20px;padding:11px 18px}
   .qrart.ok{background:#E8F3EC;color:var(--live)}
+  .warnline{color:var(--cache);margin-top:8px}
+  .warnline[hidden]{display:none}
+
   .qr-addr{
     font:13px var(--mono);color:var(--ink);margin:0 0 14px;
     padding:9px 12px;border-radius:8px;background:var(--paper);
@@ -511,6 +520,7 @@
           <input id="tv-port" class="port" inputmode="numeric" value="9978" autocomplete="off">
         </div>
         <p class="sub" id="manual-hint"></p>
+        <p class="sub warnline" id="manual-https" hidden>当前页面推不出去，点「推送到电视」会自动换到可用的链接</p>
       </div>
     </div>
     </div><!-- /flow -->
@@ -604,6 +614,11 @@
       var v = JSON.parse(localStorage.getItem(DEV_KEY) || '[]');
       return Array.isArray(v) ? v.filter(function (d) { return d && d.ip; }) : [];
     } catch (e) { return []; }
+  }
+
+  function forgetDevice(ip, port) {
+    var list = devices().filter(function (d) { return d.ip !== ip || d.port !== port; });
+    try { localStorage.setItem(DEV_KEY, JSON.stringify(list)); } catch (e) {}
   }
 
   function rememberDevice(ip, port) {
@@ -916,29 +931,56 @@
 
   function renderPick(list) {
     pickrowEl.innerHTML = list.map(function (d) {
-      return '<button data-ip="' + esc(d.ip) + '" data-port="' + esc(d.port) + '">' +
-        '<span class="ip">' + esc(d.ip) + '</span>' +
-        '<span class="go">推送到这台</span>' +
-      '</button>';
+      var ip = esc(d.ip), port = esc(d.port);
+      return '<div class="pickitem">' +
+        '<button class="pick-go" data-ip="' + ip + '" data-port="' + port + '">' +
+          '<span class="ip">' + ip + '</span>' +
+          '<span class="go">推送到这台</span>' +
+        '</button>' +
+        '<button class="pick-del" data-ip="' + ip + '" data-port="' + port + '"' +
+          ' title="删除" aria-label="删除">×</button>' +
+      '</div>';
     }).join('');
-    Array.prototype.forEach.call(pickrowEl.querySelectorAll('button'), function (b) {
+
+    Array.prototype.forEach.call(pickrowEl.querySelectorAll('.pick-go'), function (b) {
       b.onclick = function () {
-        // 不进扫描界面，直接切到「推送中」的结果页，避免闪一下
         tv = { ip: b.dataset.ip, port: b.dataset.port };
-        resultEl.hidden = false;
-        pickdevEl.hidden = true;
-        flowEl.hidden = true;
-        hideFoot();
-        var art = document.getElementById('resart');
-        art.className = 'resart';
-        art.innerHTML = '<span class="spin"></span>';
-        document.getElementById('res-title').textContent = '正在推送…';
-        document.getElementById('res-desc').textContent =
-          '推送到 ' + b.dataset.ip;
-        document.getElementById('res-close').hidden = true;
+        showPushing(b.dataset.ip, b.dataset.port);
         doPush();
       };
     });
+
+    Array.prototype.forEach.call(pickrowEl.querySelectorAll('.pick-del'), function (b) {
+      b.onclick = function (e) {
+        e.stopPropagation();
+        forgetDevice(b.dataset.ip, b.dataset.port);
+        var rest = devices();
+        if (!rest.length) {
+          // 删光了就直接进流程
+          pickdevEl.hidden = true;
+          flowEl.hidden = false;
+          showFoot(true);
+          startFlow();
+          return;
+        }
+        renderPick(rest);
+      };
+    });
+  }
+
+  /* 统一切到「推送中」的结果页 */
+  function showPushing(ip, port) {
+    resultEl.hidden = false;
+    pickdevEl.hidden = true;
+    flowEl.hidden = true;
+    document.getElementById('tip').hidden = true;
+    hideFoot();
+    var art = document.getElementById('resart');
+    art.className = 'resart';
+    art.innerHTML = '<span class="spin"></span>';
+    document.getElementById('res-title').textContent = '正在推送…';
+    document.getElementById('res-desc').textContent = '推送到 ' + ip + (port ? ':' + port : '');
+    document.getElementById('res-close').hidden = true;
   }
 
   document.getElementById('pick-new').onclick = function () {
@@ -1044,8 +1086,14 @@
     var dev = tv;
     var job = pending;
 
-    // https 发不出局域网请求：带着设备跳到 http 版，那边继续推
-    if (!noMixed) { hopToHttp(dev.ip, dev.port); return; }
+    // https 发不出局域网请求：先给可见反馈，再跳到 http 版继续推
+    if (!noMixed) {
+      showPushing(dev.ip, dev.port);
+      document.getElementById('res-title').textContent = '正在推送…';
+      document.getElementById('res-desc').textContent = '正在切换到可推送的链接';
+      setTimeout(function () { hopToHttp(dev.ip, dev.port); }, 60);
+      return;
+    }
 
     goBtn.disabled = true;
     var label = goBtn.textContent;
@@ -1146,6 +1194,7 @@
       stopCamera();
     }
     if (name !== 'scan') scanToken++;   // 作废还在跑的局域网扫描
+    document.getElementById('manual-https').hidden = noMixed || name !== 'manual';
     if (name === 'scan') {
       var blocked = !noMixed;
       document.getElementById('scan-blocked').hidden = !blocked;
@@ -1228,7 +1277,6 @@
 
   /* 带着设备和待推送的源跳到 http 版同一页，过去自动继续 */
   function hopToHttp(ip, port) {
-    setState('load', '正在换到可推送的链接…', '');
     var base = location.href.replace(/^https:/, 'http:').split('#')[0]
                        .replace(/[?&](device|src)=[^&]*/g, '')
                        .replace(/[?&]$/, '');
@@ -1350,32 +1398,17 @@
 
     if (!job) return;
 
-    // 从 https 跳过来：用户已经点过推送了，直接接着推
+    // 从 https 跳过来：用户已经点过推送了，直接接着推，不再要求点第二次
     setTimeout(function () {
       pendingKind = src;
       pending = { url: job.url, name: job.name };
       modal.hidden = false;
       modalSub.textContent = '准备推送「' + displayName(job.name) + '」';
       document.body.style.overflow = 'hidden';
-      document.getElementById('pickdev').hidden = true;
-      document.getElementById('result').hidden = true;
-      document.getElementById('tip').hidden = false;
-      document.getElementById('flow').hidden = false;
-      showFoot(true);
-      applyEnv();
-      showBrandStep();
-      selectTv(ip, port);
 
-      // 从 https 跳过来就是用户已经点过推送了，这里接着推，不再要求点第二次
-      resultEl.hidden = false;
-      flowEl.hidden = true;
-      hideFoot();
-      var art = document.getElementById('resart');
-      art.className = 'resart';
-      art.innerHTML = '<span class="spin"></span>';
-      document.getElementById('res-title').textContent = '正在推送…';
-      document.getElementById('res-desc').textContent = '推送到 ' + ip + ':' + port;
-      document.getElementById('res-close').hidden = true;
+      applyEnv();                 // 需要 noMixed / canCamera 先就绪
+      selectTv(ip, port);         // 先把设备选上，doPush 依赖 tv
+      showPushing(ip, port);      // 切到「正在推送」结果页
       doPush();
     }, 0);
   })();
