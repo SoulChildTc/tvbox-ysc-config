@@ -138,8 +138,6 @@
   .res-title{font-size:15px;font-weight:650;color:var(--ink);margin:0 0 7px}
   .res-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.6}
   .res-btn{width:100%;margin-top:22px;padding:11px 18px}
-  .res-alt{display:block;margin:0 auto;width:fit-content}
-  .res-alt[hidden]{display:none}
 
   .pickdev{padding:18px 22px 20px}
   .pickdev[hidden]{display:none}
@@ -401,7 +399,6 @@
       <p class="res-title" id="res-title">推送成功</p>
       <p class="res-desc" id="res-desc"></p>
       <button class="push-go res-btn" id="res-close">完成</button>
-      <a class="http-link res-alt" id="res-hop" href="#" hidden>换个链接再试</a>
     </div>
 
     <div class="pickdev" id="pickdev" hidden>
@@ -587,6 +584,7 @@
   var tv = null;              // { ip, port }
   var pending = null;         // { url, name }
   var pendingKind = null;     // 'multi' | 'single'，跨页面恢复用
+  var hopped = location.protocol === 'http:';  // http 页里不再跳转，避免死循环
   /* 推送名统一带前缀，避免和其他源混淆 */
   var NAME_PREFIX = 'SoulChild · ';
   function displayName(name) { return NAME_PREFIX + name; }
@@ -659,20 +657,15 @@
     tv = null;
     goBtn.disabled = true;
 
-    if (blocked && location.protocol === 'https:') {
-      // 被拦了：给「换到 http 重新扫描」的入口
-      pendingKind = pendingKind || null;
-      showResult(false, { ip: '', port: '' }, '浏览器不让访问本地设备');
-      document.getElementById('res-title').textContent = '无法扫描';
-      document.getElementById('res-desc').innerHTML =
-        '浏览器不让访问本地设备<br>点下面的链接再试一次';
-      var hop = document.getElementById('res-hop');
+    // https 被拦：自动换到 http 重新扫，用户不用操作
+    if (blocked && location.protocol === 'https:' && !hopped) {
+      hopped = true;
+      setState('load', '正在换到可用的链接…', '');
       var base = location.href.replace(/^https:/, 'http:').split('#')[0]
                               .replace(/[?&](device|src|scan)=[^&]*/g, '')
                               .replace(/[?&]$/, '');
       var sep = base.indexOf('?') > -1 ? '&' : '?';
-      hop.href = base + sep + 'scan=1';
-      hop.hidden = false;
+      setTimeout(function () { location.replace(base + sep + 'scan=1'); }, 80);
       return;
     }
     setState('warn', msg, '可以切到「扫码」或「手填 IP」');
@@ -1008,22 +1001,6 @@
     document.getElementById('tip').hidden = true;
     hideFoot();
 
-    // https 下失败且是局域网被拦 → 给一条换到 http 的兜底
-    var hop = document.getElementById('res-hop');
-    var canHop = !ok && location.protocol === 'https:';
-    if (canHop && dev && dev.ip) {
-      var base = 'http:' + location.href.slice(6).split('#')[0]
-                                        .replace(/[?&](device|src)=[^&]*/g, '')
-                                        .replace(/[?&]$/, '');
-      var sep = base.indexOf('?') > -1 ? '&' : '?';
-      hop.href = base + sep +
-        'device=' + encodeURIComponent(dev.ip + ':' + dev.port) +
-        (pendingKind ? '&src=' + pendingKind : '');
-      hop.hidden = false;
-    } else {
-      hop.hidden = true;
-    }
-
     var art = document.getElementById('resart');
     art.className = 'resart' + (ok ? '' : ' bad');
     art.innerHTML = ok
@@ -1036,7 +1013,7 @@
         '<br>电视上没反应的话，确认它正停在「配置」页面'
       : (reason || '电视可能不在线') +
         '<br>' + (location.protocol === 'https:'
-          ? '点下面的链接再试一次'
+          ? '换个方式再试一次'
           : '检查电视和手机是否在同一个 WiFi');
   }
 
@@ -1119,6 +1096,17 @@
       .catch(function () { return 'unsupported'; });
   }
 
+  /* 带着设备和待推送的源跳到 http 版同一页，过去自动继续推 */
+  function hopToHttp(ip, port) {
+    var base = location.href.replace(/^https:/, 'http:').split('#')[0]
+                            .replace(/[?&](device|src|scan)=[^&]*/g, '')
+                            .replace(/[?&]$/, '');
+    var sep = base.indexOf('?') > -1 ? '&' : '?';
+    location.replace(base + sep +
+      'device=' + encodeURIComponent(ip + ':' + port) +
+      (pendingKind ? '&src=' + pendingKind : ''));
+  }
+
   function doPush() {
     if (!tv || !pending) return;
     var dev = tv;
@@ -1131,6 +1119,15 @@
 
     pushTo(dev, job.url, job.name).then(function (ok) {
       goBtn.textContent = label;
+
+      // https 下失败多半是 LNA 被拦：自动换到 http 页面继续推，用户不用管
+      if (!ok && location.protocol === 'https:' && !hopped) {
+        hopped = true;
+        setState('load', '正在换到可用的链接…', '');
+        setTimeout(function () { hopToHttp(dev.ip, dev.port); }, 80);
+        return;
+      }
+
       if (!ok) {
         goBtn.disabled = false;
         setState('warn', '推送没发出去', '');
