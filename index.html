@@ -138,6 +138,8 @@
   .res-title{font-size:15px;font-weight:650;color:var(--ink);margin:0 0 7px}
   .res-desc{font-size:12.5px;color:var(--mute);margin:0;line-height:1.6}
   .res-btn{width:100%;margin-top:22px;padding:11px 18px}
+  .res-alt{display:block;margin:0 auto;width:fit-content}
+  .res-alt[hidden]{display:none}
 
   .pickdev{padding:18px 22px 20px}
   .pickdev[hidden]{display:none}
@@ -399,6 +401,7 @@
       <p class="res-title" id="res-title">推送成功</p>
       <p class="res-desc" id="res-desc"></p>
       <button class="push-go res-btn" id="res-close">完成</button>
+      <a class="http-link res-alt" id="res-hop" href="#" hidden>换个链接再试</a>
     </div>
 
     <div class="pickdev" id="pickdev" hidden>
@@ -988,6 +991,22 @@
     document.getElementById('tip').hidden = true;
     hideFoot();
 
+    // https 下失败且是局域网被拦 → 给一条换到 http 的兜底
+    var hop = document.getElementById('res-hop');
+    var canHop = !ok && dev && location.protocol === 'https:';
+    if (canHop) {
+      var base = 'http:' + location.href.slice(6).split('#')[0]
+                                        .replace(/[?&](device|src)=[^&]*/g, '')
+                                        .replace(/[?&]$/, '');
+      var sep = base.indexOf('?') > -1 ? '&' : '?';
+      hop.href = base + sep +
+        'device=' + encodeURIComponent(dev.ip + ':' + dev.port) +
+        (pendingKind ? '&src=' + pendingKind : '');
+      hop.hidden = false;
+    } else {
+      hop.hidden = true;
+    }
+
     var art = document.getElementById('resart');
     art.className = 'resart' + (ok ? '' : ' bad');
     art.innerHTML = ok
@@ -998,7 +1017,10 @@
     document.getElementById('res-desc').innerHTML = ok
       ? '已推送到 ' + esc(dev.ip) + ':' + esc(dev.port) +
         '<br>电视上没反应的话，确认它正停在「配置」页面'
-      : (reason || '电视可能不在线') + '<br>检查电视和手机是否在同一个 WiFi';
+      : (reason || '电视可能不在线') +
+        '<br>' + (location.protocol === 'https:'
+          ? '点下面的链接再试一次'
+          : '检查电视和手机是否在同一个 WiFi');
   }
 
   document.getElementById('res-close').onclick = closeModal;
@@ -1094,9 +1116,11 @@
       goBtn.textContent = label;
       if (!ok) {
         goBtn.disabled = false;
-        setState('warn', '推送没发出去',
-          '电视可能不在线，或浏览器拦了本地请求。可以换个 IP 试试');
-        showResult(false, dev, '没连上这台电视');
+        setState('warn', '推送没发出去', '');
+        showResult(false, dev,
+          location.protocol === 'https:'
+            ? '浏览器可能不让访问本地设备'
+            : '没连上这台电视');
         return;
       }
       try { localStorage.setItem('tvbox-tv', JSON.stringify(dev)); } catch (e) {}
@@ -1336,6 +1360,40 @@
     }
     step();
   }
+
+
+  /* 兜底：从 https 换到 http 打开时带了设备信息，直接接着推 */
+  (function resumeFromUrl() {
+    if (location.protocol === 'https:') return;   // http 页面才需要恢复
+    var md = location.search.match(/[?&]device=([^&]+)/);
+    if (!md) return;
+    var p = decodeURIComponent(md[1]).match(/^(\d{1,3}(?:\.\d{1,3}){3})(?::(\d+))?$/);
+    if (!p) return;
+
+    var ip = p[1], port = p[2] || PORT;
+    var src = (location.search.match(/[?&]src=(\w+)/) || [])[1];
+    var job = src === 'single'
+      ? { url: singleUrl, name: '单仓聚合' }
+      : src === 'multi'
+        ? { url: multiUrl, name: '多仓订阅' }
+        : null;
+
+    rememberDevice(ip, port);
+    if (history.replaceState) history.replaceState(null, '', location.pathname);
+    if (!job) return;
+
+    setTimeout(function () {
+      pendingKind = src;
+      pending = { url: job.url, name: job.name };
+      modal.hidden = false;
+      modalSub.textContent = '准备推送「' + displayName(job.name) + '」';
+      document.body.style.overflow = 'hidden';
+      applyEnv();
+      selectTv(ip, port);
+      showPushing(ip, port);
+      doPush();
+    }, 0);
+  })();
 
   fetch(base + 'output/status.json', { cache: 'no-cache' })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
