@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-19 17:53:18",
-  "repo": "Lightconer/tvbox-ysc-config",
+  "updated_at": "2026-11-19 21:31:12",
+  "repo": "SoulChildTc/tvbox-ysc-config",
   "sources": [
     {
       "id": "feimao",
@@ -72,6 +72,13 @@
       "name": "挺好分享多仓",
       "ok": true,
       "used_url": "http://ztha.top/TVBox/GYCK.json",
+      "error": null
+    },
+    {
+      "id": "citong",
+      "name": "刺桐娱乐",
+      "ok": true,
+      "used_url": "https://www.cttv.vip/ys/json/ctys.json",
       "error": null
     }
   ]
