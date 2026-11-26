@@ -12,12 +12,12 @@
 ## 一、源可用性状态
 
 <!-- STATUS_START -->
-> 🔄 最近更新：2026-11-26 18:29:41（北京时间） · 成功 **10/11** 个源
+> 🔄 最近更新：2026-11-26 22:46:40（北京时间） · 成功 **11/11** 个源
 
 | 配置源 | 状态 | 使用地址 |
 | --- | --- | --- |
 | 肥猫 | ✅ 成功 | `https://6296.kstore.vip/facat.json` |
-| 饭太硬 | ❌ 失败 | HTTPConnectionPool(host='www.xn--sss604efuw.xyz', port=80... |
+| 饭太硬 | ✅ 成功 | `http://www.饭太硬.net/tv` |
 | 王二小 | ✅ 成功 | `https://d.kstore.dev/download/9280/wex.json` |
 | 老刘备 | ✅ 成功 | `https://raw.liucn.cc/box/m.json` |
 | 小马 | ✅ 成功 | `https://szyyds.cn/tv/x.json` |
