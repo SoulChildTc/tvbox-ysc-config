@@ -14,10 +14,10 @@
     {
       "id": "fantaiying",
       "name": "饭太硬",
+      "ua": "okhttp/3.12.13",
       "urls": [
         "http://www.饭太硬.net/tv",
-        "http://www.饭太硬.cc/tv",
-        "http://www.饭太硬.xyz/tv"
+        "http://www.饭太硬.cc/tv"
       ]
     },
     {

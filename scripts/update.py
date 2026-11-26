@@ -18,6 +18,7 @@
 用法：
   python scripts/update.py
 """
+import base64
 import datetime
 import json
 import os
@@ -73,6 +74,15 @@ def parse_json_lenient(text: str):
             raise
 
 
+def _unwrap_image_payload(content: bytes):
+    """部分接口把配置伪装成图片：JPEG 文件后追加 "<magic>**<base64>" 载荷。
+    仅当内容真的是 JPEG（FFD8 开头）且含 ** 分隔符时解包，其余原样返回。"""
+    if not content.startswith(b"\xff\xd8") or b"**" not in content:
+        return None
+    tail = content.split(b"**", 1)[1]
+    return base64.b64decode(tail).decode("utf-8", "replace")
+
+
 def idn_encode(url: str) -> str:
     """将 URL 中的中文（国际化）域名转成 punycode，避免 DNS 解析失败。
     例如：http://www.饭太硬.com/tv -> http://www.xn--sss604efuw.com/tv
@@ -120,7 +130,7 @@ def _should_retry(err: Exception, resp_text_len: int = -1) -> bool:
     return False
 
 
-def fetch_config(url: str) -> dict:
+def fetch_config(url: str, ua: str = USER_AGENT) -> dict:
     """抓取单个地址并解析为 JSON dict；失败时抛出异常。"""
     target = idn_encode(url)
     last_err = None
@@ -129,14 +139,15 @@ def fetch_config(url: str) -> dict:
             resp = requests.get(
                 target,
                 headers={
-                    "User-Agent": USER_AGENT,
+                    "User-Agent": ua,
                     "Accept": "application/json,text/plain,*/*",
                 },
                 timeout=TIMEOUT,
                 allow_redirects=True,
             )
             resp.raise_for_status()
-            data = parse_json_lenient(resp.text)
+            text = _unwrap_image_payload(resp.content)
+            data = parse_json_lenient(text if text is not None else resp.text)
             if not is_valid_tvbox_config(data):
                 raise ValueError("返回内容不是 TVBox 配置（缺少 sites/spiders/lives 或 urls 字段）")
             return data
@@ -300,13 +311,14 @@ def main() -> int:
         name = src.get("name", "未知")
         sid = src.get("id", name)
         urls = src.get("urls", [])
+        src_ua = src.get("ua", USER_AGENT)
 
         entry = {"id": sid, "name": name, "ok": False, "used_url": None, "error": None}
         saved = False
 
         for url in urls:
             try:
-                data = fetch_config(url)
+                data = fetch_config(url, src_ua)
                 out_path = os.path.join(OUTPUT_DIR, f"{sid}.json")
                 with open(out_path, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
@@ -323,7 +335,7 @@ def main() -> int:
                 break
             except Exception as e:  # noqa: BLE001
                 print(f"[FAIL] {name}  {url}  ->  {e}")
-                entry["error"] = str(e)
+                entry["error"] = entry["error"] or str(e)
 
             # 地址之间稍作间隔，避免被限流
             time.sleep(URL_INTERVAL)
